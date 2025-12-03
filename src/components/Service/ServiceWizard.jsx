@@ -380,7 +380,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             // REDUNDANT SAFETY: Force UUIDs here too
             clientId: formData.clientId || '00000000-0000-0000-0000-000000000000',
             companyId: formData.companyId || user?.companyId || '00000000-0000-0000-0000-000000000000',
-            auditLog: Array.isArray(updatedAuditLog) ? updatedAuditLog : []
+
         };
 
         setFormData(prev => ({

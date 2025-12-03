@@ -17,7 +17,7 @@ const CompanyManagement = () => {
         email: '',
         logo: null,
 
-        logo: null,
+
         modules: []
     });
 
