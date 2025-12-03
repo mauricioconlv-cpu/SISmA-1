@@ -1,0 +1,54 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f1f5f9; /* slate-100 */
+}
+
+/* Custom Styles from Original Prototype */
+
+.watermark-container {
+  @apply relative transition-all duration-500;
+  opacity: 0.7;
+  pointer-events: none;
+  user-select: none;
+  filter: grayscale(50%);
+}
+
+.watermark-overlay {
+  @apply absolute inset-0 z-10 flex items-center justify-center bg-white/40;
+}
+
+.watermark-text {
+  font-size: 4rem;
+  font-weight: 900;
+  color: rgba(0,0,0,0.08);
+  transform: rotate(-25deg);
+  text-transform: uppercase;
+  border: 8px dashed rgba(0,0,0,0.08);
+  padding: 40px;
+  text-align: center;
+  line-height: 1;
+}
+
+.unlock-btn {
+  pointer-events: auto;
+  cursor: pointer;
+  z-index: 20;
+}
+
+/* Print Styles */
+@media print {
+  .no-print { display: none !important; }
+  .print-only { display: block !important; }
+  body { background: white; }
+  @page { margin: 0; }
+}
+
+/* Scrollbar */
+.gallery-scroll::-webkit-scrollbar { height: 8px; }
+.gallery-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
