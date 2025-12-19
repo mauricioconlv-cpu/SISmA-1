@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
+import { useAuth } from './AuthContext';
 
 const ServiceContext = createContext();
 
@@ -17,11 +18,18 @@ export const useServices = () => {
             catalogs: {},
             updateCatalogs: () => { }
         };
+
     }
     return context;
 };
 
+// CONSTANTE ID CLIENTE 1
+const CLIENTE_1_EMAIL = 'gruaslafundicion@gmail.com';
+const CLIENTE_1_ID = 'cliente_01'; // O el UUID real si lo tuviéramos
+
 export const ServiceProvider = ({ children }) => {
+    const { user } = useAuth(); // Accedemos al usuario actual
+
     // Initialize from localStorage or empty array
     const [services, setServices] = useState(() => {
         try {
@@ -105,10 +113,19 @@ export const ServiceProvider = ({ children }) => {
 
             let validClientId = newService.clientId;
 
+            // LÓGICA ESPECIAL CLIENTE 1
+            if (user && user.email === CLIENTE_1_EMAIL) {
+                console.info("🔒 Detectado Cliente 1. Forzando client_id de La Fundición.");
+                validClientId = CLIENTE_1_ID;
+            }
+
             // TRUCO: Convertimos a String() para poder medir el largo aunque sea un número
-            if (!validClientId || String(validClientId).length < 30) {
-                console.warn("⚠️ ID inválido corregido automáticamente. Usando Dummy.");
-                validClientId = DUMMY_UUID;
+            if (!validClientId || String(validClientId).length < 2) { // Bajé la validación de largo 30 a 2 para permitir 'cliente_01'
+                // Si NO es cliente 1 y el ID es inválido, usamos Dummy
+                if (validClientId !== CLIENTE_1_ID) {
+                    console.warn("⚠️ ID inválido corregido automáticamente. Usando Dummy.");
+                    validClientId = DUMMY_UUID;
+                }
             }
 
             const serviceToInsert = {
@@ -205,10 +222,17 @@ export const ServiceProvider = ({ children }) => {
 
             let validClientId = updatedData.clientId;
 
+            // LÓGICA ESPECIAL CLIENTE 1 (También en Update para asegurar integridad)
+            if (user && user.email === CLIENTE_1_EMAIL) {
+                validClientId = CLIENTE_1_ID;
+            }
+
             // TRUCO: Convertimos a String() para poder medir el largo aunque sea un número
-            if (!validClientId || String(validClientId).length < 30) {
-                console.warn("⚠️ ID inválido en UPDATE corregido automáticamente. Usando Dummy.");
-                validClientId = DUMMY_UUID;
+            if (!validClientId || String(validClientId).length < 2) {
+                if (validClientId !== CLIENTE_1_ID) {
+                    console.warn("⚠️ ID inválido en UPDATE corregido automáticamente. Usando Dummy.");
+                    validClientId = DUMMY_UUID;
+                }
             }
 
             // 3. PREPARAR PAYLOAD LIMPIO
