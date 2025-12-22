@@ -1,4 +1,4 @@
-import { Truck, History, Settings, LogOut, Home, Users, Building } from 'lucide-react';
+import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 'lucide-react';
 import { ROLES } from '../../utils/constants';
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
@@ -8,7 +8,11 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
         { id: 'history', label: 'Histórico', icon: <History size={20} /> },
     ];
 
+    import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 'lucide-react';
+
+    // ... inside Sidebar component ...
     if (user?.rol === ROLES.SUPERADMIN) {
+        menuItems.push({ id: 'admin-dashboard', label: 'Configuración Administrativa', icon: <Shield size={20} /> });
         menuItems.push({ id: 'company-management', label: 'Empresas', icon: <Building size={20} /> });
     }
 
