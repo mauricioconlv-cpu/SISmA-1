@@ -59,6 +59,14 @@ export const AuthProvider = ({ children }) => {
                 company_id: 'admin_corp',
                 permissions: ['all']
             };
+        } else if (supabaseUser.email === 'mauricioconlv@gmail.com') { // Superadmin Fix
+            appUser = {
+                ...appUser,
+                nombre: 'Mauricio Superadmin',
+                rol: ROLES.SUPERADMIN,
+                company_id: null,
+                permissions: ['all']
+            };
         } else {
             // Default Fallback
             appUser = {
