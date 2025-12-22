@@ -8,7 +8,7 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
         { id: 'history', label: 'Histórico', icon: <History size={20} /> },
     ];
 
-    import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 'lucide-react';
+
 
     // ... inside Sidebar component ...
     if (user?.rol === ROLES.SUPERADMIN) {
