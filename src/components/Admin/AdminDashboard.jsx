@@ -30,8 +30,9 @@ const AdminDashboard = () => {
             if (error) throw error;
             setClients(data || []);
         } catch (error) {
-            console.error('Error fetching clients:', error);
-            alert('Error al cargar clientes');
+            console.error('Supabase Error (fetchClients):', error);
+            // Treat error as empty list to avoid UI blocking
+            setClients([]);
         } finally {
             setLoading(false);
         }
