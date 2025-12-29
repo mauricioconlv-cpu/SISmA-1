@@ -1,44 +1,63 @@
 import React from 'react';
-import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, History as HistoryIcon } from 'lucide-react';
+import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, History as HistoryIcon, Package, DollarSign } from 'lucide-react';
 import { ROLES } from '../../utils/constants';
+
+// Data-Driven Menu Configuration (The Map)
+const MODULE_MENU_MAP = {
+    // Core
+    'tow': { id: 'new-service', label: 'Nuevo Servicio', Icon: Truck },
+
+    // Admin / Management
+    'admin_basic': { id: 'team-management', label: 'Gestión de Equipo', Icon: UserCog },
+    'finance': { id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign },
+    'inventory': { id: 'inventory', label: 'Inventario', Icon: Package },
+};
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // --- MODULE PERMISSIONS (LEGO) ---
-    const activeModules = user?.company?.enabled_services || [];
-    // activeModules is array of objects from constants.js: [{ id: 'tow', ... }] or database strings? 
-    // AuthContext maps them to objects: `enabledServices = modules.map(m => SERVICE_TYPES.find(...))`
-    // So we check by .id
+    // Get array of active module objects [{id: 'tow'}, ...] or string keys?
+    // AuthContext structure: user.company.enabled_services = [{id: 'tow', ...}, {id: 'jump', ...}]
+    // We map to simple set of strings for checking.
+    const activeModuleKeys = new Set(
+        (user?.company?.enabled_services || []).map(m => m.id)
+    );
 
-    const hasModule = (moduleKey) => {
-        if (user?.role === 'superadmin') return true; // Superadmin sees all
-        // Check if module is active. NOTE: 'admin_basic' is not in SERVICE_TYPES. 
-        // We need to check against the raw 'company_modules' if AuthContext preserved them, or if we should add 'admin_basic' to constants?
-        // For now, let's assume 'tow' implies basic operations.
-        // User specifically asked for 'admin_basic' for Team Management. 
-        // If it's not in the array, the user won't see it. 
-        // Let's check if activeModules contains an object with id === moduleKey.
-        return activeModules.some(m => m.id === moduleKey);
-    };
+    // Helper: Superadmin sees everything, or specific things? 
+    // User said: "Si user.role === 'superadmin': ... Muestra un menú nuevo ... OCULTA el menú de 'Administración' normal"
+    // But later said "IMPORTANTE: Si el usuario es superadmin, ignora esto y muéstrale todo (o su panel de gestión)."
+    // I will stick to: Superadmin gets Platform Panel. Owner gets LEGO menu.
 
-    const menuItems = [
-        { id: 'dashboard', label: 'Inicio', Icon: Home },
-        { id: 'new-service', label: 'Nuevo Servicio', Icon: Truck },
-        { id: 'history', label: 'Histórico', Icon: HistoryIcon },
-    ];
+    const isOwner = user?.role === 'owner';
+    const isSuperAdmin = user?.role === 'superadmin';
 
-    // Filter Main Menu Items
-    const visibleMenuItems = menuItems.filter(item => {
-        if (item.id === 'new-service') {
-            // Show only if has operational modules (tow, jump, tire, gas)
-            return ['tow', 'jump', 'tire', 'gas'].some(key => hasModule(key));
-        }
-        return true; // Dashboard and History always visible? Or History needs 'tow'? Let's keep them default visible for now.
-    });
+    // --- BUILD DYNAMIC MENU ---
+    const menuItems = [];
 
+    // 1. Dashboard (Always Visible)
+    menuItems.push({ id: 'dashboard', label: 'Inicio', Icon: Home });
 
-    // --- ADMINISTRACIÓN (Dueños y Superadmin) ---
-    // The previous conditional logic for 'canAccessAdmin' and pushing items is removed
-    // as the new structure uses direct conditional rendering in JSX.
+    // 2. Dynamic Modules (LEGO) - Only for Owners (or users with company context)
+    if (isOwner) {
+        // We iterate through the defined MAP to preserve order
+        Object.keys(MODULE_MENU_MAP).forEach(key => {
+            // Check if user has this module active
+            // Special case: 'tow' key controls 'new-service' but user might have 'jump', 'tire' etc without 'tow'?
+            // User said: "El botón 'Nuevo Servicio' SOLO debe aparecer si modules.includes('tow')"
+            // I will strictly check keys.
+
+            // For 'admin_basic', if it's not in DB yet, I might fallback allowing it if 'tow' is present?
+            // User said: "El botón 'Gestión de Equipo' SOLO si modules.includes('admin_basic')."
+            // I will strictly follow that. If they don't have it, they don't see it.
+
+            if (activeModuleKeys.has(key)) {
+                menuItems.push(MODULE_MENU_MAP[key]);
+            }
+        });
+
+        // History - Always visible or linked to 'tow'? 
+        // Let's keep History always visible for Owners for now
+        menuItems.push({ id: 'history', label: 'Histórico', Icon: HistoryIcon });
+    }
 
     return (
         <div className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 shadow-xl z-50">
@@ -54,7 +73,7 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
             </div>
 
             <nav className="flex-1 p-4 space-y-2">
-                {visibleMenuItems.map(item => (
+                {menuItems.map(item => (
                     <button
                         key={item.id}
                         onClick={() => onTabChange(item.id)}
@@ -70,45 +89,8 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                     </button>
                 ))}
 
-                {/* SECCIÓN ADMINISTRACIÓN (Solo Owners) */}
-                {user?.role === 'owner' && (
-                    <div className="pt-4 mt-4 border-t border-slate-700">
-                        <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
-                            Administración
-                        </p>
-
-                        {/* Gestión de Equipo: Requires 'admin_basic' or 'tow' as fallback if admin_basic not defined in DB yet */}
-                        {(hasModule('admin_basic') || hasModule('tow')) && (
-                            <button
-                                onClick={() => onTabChange('team-management')}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'team-management'
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                    }`}
-                            >
-                                <UserCog size={20} />
-                                <span className="text-sm">Gestión de Equipo</span>
-                            </button>
-                        )}
-
-                        {/* Clientes y Tarifas: Requires 'finance' */}
-                        {hasModule('finance') && (
-                            <button
-                                onClick={() => onTabChange('client-management')}
-                                className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'client-management'
-                                    ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
-                                    : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                    }`}
-                            >
-                                <Users size={20} />
-                                <span className="text-sm">Clientes y Tarifas</span>
-                            </button>
-                        )}
-                    </div>
-                )}
-
                 {/* SECCIÓN PLATAFORMA (Solo Superadmin) */}
-                {user?.role === 'superadmin' && (
+                {isSuperAdmin && (
                     <div className="pt-4 mt-4 border-t border-slate-700">
                         <p className="px-4 text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">
                             Gestión de Plataforma

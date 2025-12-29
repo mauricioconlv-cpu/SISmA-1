@@ -14,6 +14,7 @@ import CompanyManagement from './components/Admin/CompanyManagement';
 import ClientManagement from './components/Admin/ClientManagement';
 import ClientTariffs from './components/Admin/ClientTariffs';
 import PlatformCompanies from './components/Admin/PlatformCompanies';
+import Inventory from './components/Admin/Inventory';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import { DEFAULT_CLIENTES, DEFAULT_GRUAS, DEFAULT_OPERADORES, DEFAULT_USUARIOS, DEFAULT_TARIFAS } from './utils/constants';
@@ -78,6 +79,8 @@ const AppContent = () => {
                 return <ClientTariffs clientId={selectedClientId} onBack={() => setActiveTab('client-management')} />;
             case 'platform-companies':
                 return <PlatformCompanies />;
+            case 'inventory':
+                return <Inventory />;
             default:
                 return <Dashboard onNavigate={setActiveTab} />;
         }
