@@ -117,21 +117,25 @@ export const AuthProvider = ({ children }) => {
                     .eq('is_active', true);
 
                 if (modules && !modulesError) {
-                    // Hydrate full service objects
+                    // Extract just the keys (strings) for Sidebar checking
+                    const moduleKeys = modules.map(m => m.module_key);
+
+                    // Hydrate full service objects for ServiceWizard (only vehicular/home services)
                     const enabledServices = modules.map(m => {
                         return SERVICE_TYPES.find(st => st.id === m.module_key);
-                    }).filter(Boolean); // Remove undefineds
+                    }).filter(Boolean); // Remove undefineds (finance, inventory, etc.)
 
                     appUser.company = {
                         ...(companyData || {}),
                         active: true,
-                        enabled_services: enabledServices
+                        enabled_services: enabledServices,
+                        modules: moduleKeys // NEW: Raw lego blocks
                     };
 
-                    console.log("✅ Configuración de Empresa Cargada:", enabledServices.length, "módulos.");
+                    console.log("✅ Configuración de Empresa Cargada:", moduleKeys.length, "módulos (raw),", enabledServices.length, "servicios (hydrated).");
                 } else {
                     console.warn("⚠️ No se encontraron módulos activos para la empresa:", targetCompanyId);
-                    appUser.company = { enabled_services: [] };
+                    appUser.company = { enabled_services: [], modules: [] };
                 }
             }
 

@@ -16,11 +16,13 @@ const MODULE_MENU_MAP = {
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // --- MODULE PERMISSIONS (LEGO) ---
     // Get array of active module objects [{id: 'tow'}, ...] or string keys?
-    // AuthContext structure: user.company.enabled_services = [{id: 'tow', ...}, {id: 'jump', ...}]
-    // We map to simple set of strings for checking.
-    const activeModuleKeys = new Set(
-        (user?.company?.enabled_services || []).map(m => m.id)
-    );
+    // AuthContext structure: 
+    // user.company.modules = ['tow', 'finance', 'inventory'] (Raw keys)
+    // user.company.enabled_services = [{id: 'tow', ...}] (Hydrated services only)
+
+    // We prefer specific 'modules' array, fallback to enabled_services for legacy safety
+    const rawModules = user?.company?.modules || (user?.company?.enabled_services || []).map(m => m.id);
+    const activeModuleKeys = new Set(rawModules);
 
     // Helper: Superadmin sees everything, or specific things? 
     // User said: "Si user.role === 'superadmin': ... Muestra un menú nuevo ... OCULTA el menú de 'Administración' normal"
