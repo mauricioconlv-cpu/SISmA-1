@@ -1,21 +1,13 @@
 import React from 'react';
-import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2 } from 'lucide-react';
+import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, History as HistoryIcon } from 'lucide-react';
 import { ROLES } from '../../utils/constants';
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     const menuItems = [
-        { id: 'dashboard', label: 'Inicio', icon: <Home size={20} /> },
-        { id: 'new-service', label: 'Nuevo Servicio', icon: <Truck size={20} /> },
-        { id: 'history', label: 'Histórico', icon: <History size={20} /> },
+        { id: 'dashboard', label: 'Inicio', Icon: Home },
+        { id: 'new-service', label: 'Nuevo Servicio', Icon: Truck },
+        { id: 'history', label: 'Histórico', Icon: HistoryIcon },
     ];
-
-
-
-    // --- ADMINISTRACIÓN (Dueños y Superadmin) ---
-    const canAccessAdmin = user?.role === 'owner' || user?.rol === ROLES.SUPERADMIN || user?.rol === 'owner'; // Handle both role props just in case
-
-    // The previous conditional logic for 'canAccessAdmin' and pushing items is removed
-    // as the new structure uses direct conditional rendering in JSX.
 
     return (
         <div className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 shadow-xl z-50">
@@ -41,7 +33,7 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                             }`}
                     >
                         <div className={`${activeTab === item.id ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
-                            {item.icon}
+                            <item.Icon size={20} />
                         </div>
                         <span className="text-sm">{item.label}</span>
                     </button>
