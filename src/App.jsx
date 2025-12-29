@@ -8,6 +8,7 @@ import { ClientProvider } from './context/ClientContext';
 import LoginScreen from './components/Auth/LoginScreen';
 import Dashboard from './components/Dashboard/Dashboard';
 import UserManagement from './components/Admin/UserManagement';
+import TeamManagement from './components/Admin/TeamManagement';
 
 import CompanyManagement from './components/Admin/CompanyManagement';
 import ClientManagement from './components/Admin/ClientManagement';
@@ -59,6 +60,8 @@ const AppContent = () => {
                 return <AdminDashboard />;
             case 'user-management':
                 return <UserManagement />;
+            case 'team-management': // New Route for Owner Team
+                return <TeamManagement />;
             case 'company-management':
                 return <CompanyManagement />;
             case 'client-management':

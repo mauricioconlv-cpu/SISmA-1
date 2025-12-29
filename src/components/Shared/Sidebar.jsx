@@ -2,6 +2,9 @@ import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 
 import { ROLES } from '../../utils/constants';
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
+    // VISUAL DEBUG REQUESTED BY USER
+    console.log("Rol del usuario actual:", user?.role);
+
     const menuItems = [
         { id: 'dashboard', label: 'Inicio', icon: <Home size={20} /> },
         { id: 'new-service', label: 'Nuevo Servicio', icon: <Truck size={20} /> },
@@ -10,22 +13,17 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
 
 
 
-    // ... inside Sidebar component ...
-    if (user?.rol === ROLES.SUPERADMIN) {
-        menuItems.push({ id: 'admin-dashboard', label: 'Configuración Administrativa', icon: <Shield size={20} /> });
-        menuItems.push({ id: 'company-management', label: 'Empresas', icon: <Building size={20} /> });
-    }
+    // --- ADMINISTRACIÓN (Dueños y Superadmin) ---
+    const canAccessAdmin = user?.role === 'owner' || user?.rol === ROLES.SUPERADMIN || user?.rol === 'owner'; // Handle both role props just in case
 
-    if (user?.rol === ROLES.SUPERADMIN || user?.rol === ROLES.ADMIN) {
-        menuItems.push({ id: 'client-management', label: 'Clientes', icon: <Users size={20} /> });
-    }
+    if (canAccessAdmin) {
+        // Separador Visual (Opcional, o simplemente agregar los items)
 
-    if (user?.rol === ROLES.SUPERADMIN || user?.rol === ROLES.ADMIN) {
-        menuItems.push({ id: 'user-management', label: 'Usuarios', icon: <Users size={20} /> });
-    }
+        // Gestión de Equipo
+        menuItems.push({ id: 'team-management', label: 'Gestión de Equipo', icon: <Users size={20} /> });
 
-    if (user?.rol === ROLES.ADMIN || user?.rol === ROLES.SUPERADMIN) {
-        menuItems.push({ id: 'admin', label: 'Configuración', icon: <Settings size={20} /> });
+        // Clientes y Tarifas (Reusing client-management ID but ensuring label matches request)
+        menuItems.push({ id: 'client-management', label: 'Clientes y Tarifas', icon: <Building size={20} /> });
     }
 
     return (

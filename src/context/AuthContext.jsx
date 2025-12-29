@@ -44,22 +44,36 @@ export const AuthProvider = ({ children }) => {
 
         // --- DYNAMIC PERMISSIONS & ROLES ---
         try {
-            // 1. Fetch Profile/User Data (Simulated for now, usually from 'profiles' table)
-            // Ideally: const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+            // 1. Fetch Profile/User Data (REAL ARCHITECTURE)
+            const { data: profile, error: profileError } = await supabase
+                .from('profiles')
+                .select('*') // Changed to * as requested to ensure role and everything else is fetched
+                .eq('id', supabaseUser.id)
+                .single();
 
-            // Temporary Role Assignment Logic (Keep existing logic but without hardcoded modules)
-            if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
-                appUser.role = ROLES.CLIENT;
-                appUser.company_id = 'cliente_01'; // Pending: Fetch real UUID from 'companies' table if needed, for now matches Migration Script
-            } else if (supabaseUser.email === 'admin@gruas.com') {
-                appUser.role = ROLES.ADMIN;
-                appUser.company_id = 'admin_corp';
-            } else if (supabaseUser.email === 'mauricioconlv@gmail.com') {
-                appUser.role = ROLES.SUPERADMIN;
+            // Assign Role from DB or Default
+            if (profile && profile.role) {
+                appUser.role = profile.role;
             } else {
-                appUser.role = ROLES.OPERATOR;
+                appUser.role = ROLES.OPERATOR; // Default safety
             }
-            appUser.rol = appUser.role; // Compat
+            appUser.rol = appUser.role; // Helper for legacy compatibility
+
+            // (Optional) Keep Superadmin override just in case of DB sync issues during dev
+            if (supabaseUser.email === 'mauricioconlv@gmail.com') {
+                appUser.role = ROLES.SUPERADMIN;
+                appUser.rol = ROLES.SUPERADMIN;
+            }
+
+            // Determine Company ID
+            // For now, logic remains similar: map specific emails to specific IDs (or fetch from companies table as before)
+            if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
+                appUser.company_id = 'cliente_01';
+            } else if (supabaseUser.email === 'admin@gruas.com') {
+                appUser.company_id = 'admin_corp';
+            } else {
+                appUser.company_id = null;
+            }
 
             // 2. FETCH COMPANY CONFIGURATION (REAL ARCHITECTURE)
             if (appUser.company_id) {
@@ -130,8 +144,20 @@ export const AuthProvider = ({ children }) => {
     };
 
     const logout = async () => {
-        await supabase.auth.signOut();
-        // State update handled by onAuthStateChange
+        try {
+            await supabase.auth.signOut();
+        } catch (error) {
+            console.error("Error en logout remoto (ignorado):", error);
+        } finally {
+            // ESTO SE DEBE EJECUTAR SIEMPRE
+            setUser(null);
+            // setSession(null); // Assuming setSession isn't state here, handled by auto-detection usually but let's clear what we can
+            // In this file, 'user' is the main state. 'loading' is state.
+            // There is no explicit 'setSession' exposed in the snippet I saw earlier, usually handled by onAuthStateChange.
+            // But we can force user null.
+            localStorage.clear(); // Limpieza nuclear
+            window.location.href = '/login'; // Redirección forzada
+        }
     };
 
     const hasPermission = (permission) => {

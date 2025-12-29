@@ -2,11 +2,17 @@ import React, { useState } from 'react';
 import { Users, Plus, Edit2, Trash2, MapPin, Mail, DollarSign, Upload, Building } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { useClients } from '../../context/ClientContext';
+import { useAuth } from '../../context/AuthContext';
 
 const ClientManagement = () => {
+    const { user } = useAuth();
     const { clients, addClient, updateClient, deleteClient } = useClients();
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentClient, setCurrentClient] = useState(null);
+
+    const canEditFinancials = ['owner', 'superadmin'].includes(user?.role);
+    // Fallback: If no user load yet, assume strict.
+
 
     // Form State
     const [formData, setFormData] = useState({
@@ -122,19 +128,22 @@ const ClientManagement = () => {
                             )}
                             <div className="absolute top-4 right-4 flex gap-2">
                                 <button onClick={() => handleOpenModal(client)} className="bg-white p-2 rounded-full shadow text-blue-600 hover:text-blue-800"><Edit2 size={16} /></button>
-                                <button onClick={() => deleteClient(client.id)} className="bg-white p-2 rounded-full shadow text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                {canEditFinancials && (
+                                    <button onClick={() => deleteClient(client.id)} className="bg-white p-2 rounded-full shadow text-red-400 hover:text-red-600"><Trash2 size={16} /></button>
+                                )}
                             </div>
                         </div>
                         <div className="p-6">
                             <h3 className="text-xl font-bold text-slate-800 mb-2">{client.name}</h3>
                             <div className="space-y-2 text-sm text-slate-500 mb-4">
                                 <p className="flex items-center gap-2"><MapPin size={14} /> {client.address || 'Sin dirección'}</p>
-                                <p className="flex items-center gap-2"><Mail size={14} /> {client.email || 'Sin email'}</p>
+                                <p className="flex items-center gap-2"><Mail size={14} /> {client.contact_info || client.email || 'Sin contacto'}</p>
                             </div>
-                            <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
+                            {/* Rates Section Hidden for Phase 1 */}
+                            {/* <div className="border-t border-slate-100 pt-4 flex justify-between items-center">
                                 <span className="text-xs font-bold text-slate-400 uppercase">Tarifa Local</span>
                                 <span className="font-bold text-green-600">${client.rates?.tarifaLocal || 0}</span>
-                            </div>
+                            </div> */}
                         </div>
                     </div>
                 ))}
@@ -186,118 +195,19 @@ const ClientManagement = () => {
                             </div>
 
                             <div className="mt-8 border-t border-slate-100 pt-6">
-                                <SectionTitle title="Tabulador de Tarifas Pactadas" icon={<DollarSign size={18} />} />
-                                <p className="text-sm text-slate-500 mb-6">Defina los costos específicos acordados con este cliente.</p>
-
-                                <div className="space-y-8">
-                                    {/* BÁSICOS */}
-                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                                        <h4 className="text-sm font-bold text-blue-800 uppercase mb-4 flex items-center gap-2">
-                                            <span className="w-2 h-2 bg-blue-500 rounded-full"></span> Tarifas Básicas
-                                        </h4>
-                                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Servicio Local (Fijo)</label>
-                                                <StyledInput type="number" name="tarifaLocal" value={formData.rates.tarifaLocal} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Por Kilómetro (Foráneo)</label>
-                                                <StyledInput type="number" name="tarifaKm" value={formData.rates.tarifaKm} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Banderazo de Salida</label>
-                                                <StyledInput type="number" name="banderazo" value={formData.rates.banderazo} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* EXTRAS / MANIOBRAS */}
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 border-b border-slate-100 pb-1">Extras y Maniobras</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Maniobra (Base)</label>
-                                                <StyledInput type="number" name="maniobraBase" value={formData.rates.maniobraBase} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Tiempo Espera (hr)</label>
-                                                <StyledInput type="number" name="esperaHora" value={formData.rates.esperaHora} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Horario Nocturno (+%)</label>
-                                                <StyledInput type="number" name="horarioNocturno" value={formData.rates.horarioNocturno} onChange={handleRateChange} placeholder="%" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Paso de Corriente</label>
-                                                <StyledInput type="number" name="pasoCorriente" value={formData.rates.pasoCorriente} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Cambio de Llanta</label>
-                                                <StyledInput type="number" name="cambioLlanta" value={formData.rates.cambioLlanta} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Suministro Gasolina</label>
-                                                <StyledInput type="number" name="suministroGasolina" value={formData.rates.suministroGasolina} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Resguardo (día)</label>
-                                                <StyledInput type="number" name="resguardoDia" value={formData.rates.resguardoDia} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* ESPECIALES */}
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 border-b border-slate-100 pb-1">Cargos Especiales</h4>
-                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Adaptación</label>
-                                                <StyledInput type="number" name="adaptacion" value={formData.rates.adaptacion} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Por Kg Carga</label>
-                                                <StyledInput type="number" name="cargaKg" value={formData.rates.cargaKg} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Acondicionamiento</label>
-                                                <StyledInput type="number" name="acondicionamiento" value={formData.rates.acondicionamiento} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Rescate</label>
-                                                <StyledInput type="number" name="rescate" value={formData.rates.rescate} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Nivel Subterráneo</label>
-                                                <StyledInput type="number" name="nivelSubterraneo" value={formData.rates.nivelSubterraneo} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* EQUIPO ADICIONAL */}
-                                    <div>
-                                        <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 border-b border-slate-100 pb-1">Equipo Adicional</h4>
-                                        <div className="grid grid-cols-3 gap-4">
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Uso de Dollys</label>
-                                                <StyledInput type="number" name="dollys" value={formData.rates.dollys} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Uso de Patines</label>
-                                                <StyledInput type="number" name="patines" value={formData.rates.patines} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-bold text-slate-500 mb-1">Uso de Go Jacks</label>
-                                                <StyledInput type="number" name="goJacks" value={formData.rates.goJacks} onChange={handleRateChange} placeholder="0.00" />
-                                            </div>
-                                        </div>
-                                    </div>
+                                <SectionTitle title="Tabulador de Tarifas" icon={<DollarSign size={18} />} />
+                                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200 mt-4 text-center">
+                                    <p className="text-yellow-800 font-bold">⚠️ Configuración de Tarifas</p>
+                                    <p className="text-sm text-yellow-700">Se habilitará en el siguiente paso. Por ahora registre solo los datos generales.</p>
                                 </div>
                             </div>
                         </div>
 
                         <div className="p-6 bg-slate-50 border-t border-slate-200 flex justify-end gap-3 flex-shrink-0">
                             <button onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-slate-600 font-bold hover:bg-slate-200 rounded-lg">Cancelar</button>
-                            <button onClick={handleSaveClient} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg">Guardar Cliente</button>
+                            {canEditFinancials && (
+                                <button onClick={handleSaveClient} className="px-6 py-2 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 shadow-lg">Guardar Cliente</button>
+                            )}
                         </div>
                     </div>
                 </div>
