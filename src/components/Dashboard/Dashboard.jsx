@@ -1,19 +1,84 @@
-import React from 'react';
-import { Truck, Calendar, Clock, AlertCircle, PlusCircle, History, DollarSign, TrendingUp, Sun, Moon } from 'lucide-react';
-import { SectionTitle } from '../Shared/UIComponents';
+import React, { useState, useEffect } from 'react';
+import { Truck, Calendar, Clock, AlertCircle, PlusCircle, History, DollarSign, TrendingUp, Sun, Moon, Edit3, Check, X } from 'lucide-react';
+import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { useServices } from '../../context/ServiceContext';
+import { supabase } from '../../supabaseClient';
 
 const Dashboard = ({ user, onNavigate }) => {
     const { services } = useServices();
 
-    // KPI Calculations
+    // --- STATE FOR DYNAMIC DATA ---
+    const [dailyGoal, setDailyGoal] = useState(50000);
+    const [availableVehicles, setAvailableVehicles] = useState(0);
+    const [isEditingGoal, setIsEditingGoal] = useState(false);
+    const [tempGoal, setTempGoal] = useState(50000);
+    const [loadingData, setLoadingData] = useState(true);
+
+    // KPI Calculations (Local Context Data)
     const today = new Date().toLocaleDateString();
     const servicesToday = services.filter(s => s.fecha === today).length;
     const pendingServices = services.filter(s => !s.status || s.status === 'Pendiente').length;
-    const activeServices = services.filter(s => s.status === 'Asignado' || s.status === 'En Camino').length;
+    // const activeServices = services.filter(s => s.status === 'Asignado' || s.status === 'En Camino').length;
+
+    // --- FETCH DYNAMIC DATA ---
+    useEffect(() => {
+        const fetchDashboardData = async () => {
+            if (!user?.company_id) return;
+
+            try {
+                // 1. Fetch Company Goal
+                const { data: companyData, error: companyError } = await supabase
+                    .from('companies')
+                    .select('daily_revenue_goal')
+                    .eq('id', user.company_id)
+                    .single();
+
+                if (companyData) {
+                    setDailyGoal(companyData.daily_revenue_goal || 50000);
+                    setTempGoal(companyData.daily_revenue_goal || 50000);
+                }
+
+                // 2. Fetch Active Vehicles Count
+                // Assuming 'vehicles' table exists as per update_dashboard_data.sql
+                const { count, error: vehicleError } = await supabase
+                    .from('vehicles')
+                    .select('*', { count: 'exact', head: true })
+                    .eq('company_id', user.company_id)
+                    .eq('status', 'Disponible'); // Count only available ones
+
+                if (!vehicleError) {
+                    setAvailableVehicles(count || 0);
+                }
+
+            } catch (error) {
+                console.error("Error fetching dashboard data:", error);
+            } finally {
+                setLoadingData(false);
+            }
+        };
+
+        fetchDashboardData();
+    }, [user, services]); // Depend on user and services (trigger refresh if needed)
+
+    const handleUpdateGoal = async () => {
+        if (!user?.company_id) return;
+        try {
+            const { error } = await supabase
+                .from('companies')
+                .update({ daily_revenue_goal: tempGoal })
+                .eq('id', user.company_id);
+
+            if (error) throw error;
+
+            setDailyGoal(tempGoal);
+            setIsEditingGoal(false);
+        } catch (error) {
+            console.error("Error updating goal:", error);
+            alert("Error al actualizar la meta.");
+        }
+    };
 
     // --- FINANCIAL LOGIC ---
-    const DAILY_GOAL = 50000;
     let currentIncome = 0;
     let shift1 = 0; // 00:00 - 07:59
     let shift2 = 0; // 08:00 - 15:59
@@ -57,13 +122,17 @@ const Dashboard = ({ user, onNavigate }) => {
         }
     });
 
-    const goalProgress = Math.min((currentIncome / DAILY_GOAL) * 100, 100);
+    const goalProgress = Math.min((currentIncome / dailyGoal) * 100, 100);
 
     const kpis = [
         { title: 'Servicios de Hoy', value: servicesToday.toString(), icon: <Calendar size={24} />, color: 'bg-blue-500' },
-        { title: 'Grúas Disponibles', value: '5', icon: <Truck size={24} />, color: 'bg-green-500' }, // Still dummy for now
+        { title: 'Grúas Disponibles', value: availableVehicles.toString(), icon: <Truck size={24} />, color: 'bg-green-500' },
         { title: 'Servicios Pendientes', value: pendingServices.toString(), icon: <AlertCircle size={24} />, color: 'bg-amber-500' },
     ];
+
+    // Determine Greeting Name
+    // Priority: Company Name > User Name > 'Usuario'
+    const greetingName = user?.company?.name || user?.nombre || 'Usuario';
 
     return (
         <div className="max-w-7xl mx-auto animate-fade-in">
@@ -71,7 +140,7 @@ const Dashboard = ({ user, onNavigate }) => {
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">
-                        Bienvenido de nuevo, <span className="text-blue-600">{user?.nombre || 'Usuario'}</span>
+                        Bienvenido, <span className="text-blue-600">{greetingName}</span>
                     </h1>
                     <p className="text-slate-500">Aquí tienes un resumen de la operación de hoy.</p>
                 </div>
@@ -96,8 +165,29 @@ const Dashboard = ({ user, onNavigate }) => {
                                 </h3>
                             </div>
                             <div className="text-right">
-                                <p className="text-slate-400 text-xs font-bold uppercase">Meta Diaria</p>
-                                <p className="text-xl font-bold text-slate-600">${DAILY_GOAL.toLocaleString()}</p>
+                                <p className="text-slate-400 text-xs font-bold uppercase mb-1">Meta Diaria</p>
+                                {isEditingGoal ? (
+                                    <div className="flex items-center gap-2 justify-end">
+                                        <input
+                                            type="number"
+                                            value={tempGoal}
+                                            onChange={(e) => setTempGoal(Number(e.target.value))}
+                                            className="w-32 px-2 py-1 text-right font-bold text-slate-700 bg-white border border-slate-300 rounded focus:border-blue-500 outline-none"
+                                            autoFocus
+                                        />
+                                        <button onClick={handleUpdateGoal} className="p-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                            <Check size={16} />
+                                        </button>
+                                        <button onClick={() => setIsEditingGoal(false)} className="p-1 bg-gray-400 text-white rounded hover:bg-gray-500">
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-2 justify-end group cursor-pointer" onClick={() => setIsEditingGoal(true)}>
+                                        <p className="text-xl font-bold text-slate-600">${dailyGoal.toLocaleString()}</p>
+                                        <Edit3 size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                    </div>
+                                )}
                             </div>
                         </div>
 
