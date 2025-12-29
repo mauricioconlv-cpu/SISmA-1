@@ -4,6 +4,8 @@ import { ArrowLeft, Save, DollarSign, Truck, AlertCircle } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { SERVICE_TYPES } from '../../utils/constants';
 
+const ALLOWED_SERVICES = ['tow', 'jump', 'tire', 'gas'];
+
 const ClientTariffs = ({ clientId, onBack }) => {
     const [client, setClient] = useState(null);
     const [tariffs, setTariffs] = useState({});
@@ -129,52 +131,54 @@ const ClientTariffs = ({ clientId, onBack }) => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {(SERVICE_TYPES && Array.isArray(SERVICE_TYPES) ? SERVICE_TYPES : []).map((service) => {
-                                    const rate = tariffs[service.id] || { base_rate: '', km_rate: '' };
-                                    return (
-                                        <tr key={service.id} className="hover:bg-slate-50 transition-colors">
-                                            <td className="py-4 px-4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                                                        <Truck size={20} />
-                                                        {/* Ideally use service.icon dynamic mapping but Truck works for generic */}
+                                {(SERVICE_TYPES || [])
+                                    .filter(s => ALLOWED_SERVICES.includes(s.id))
+                                    .map((service) => {
+                                        const rate = tariffs[service.id] || { base_rate: '', km_rate: '' };
+                                        return (
+                                            <tr key={service.id} className="hover:bg-slate-50 transition-colors">
+                                                <td className="py-4 px-4">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                                                            <Truck size={20} />
+                                                            {/* Ideally use service.icon dynamic mapping but Truck works for generic */}
+                                                        </div>
+                                                        <div>
+                                                            <p className="font-bold text-slate-800">{service.label}</p>
+                                                            <p className="text-xs text-slate-400 capitalize">{service.category}</p>
+                                                        </div>
                                                     </div>
-                                                    <div>
-                                                        <p className="font-bold text-slate-800">{service.label}</p>
-                                                        <p className="text-xs text-slate-400 capitalize">{service.category}</p>
-                                                    </div>
-                                                </div>
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <StyledInput
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={rate.base_rate}
-                                                    onChange={(e) => handleRateChange(service.id, 'base_rate', e.target.value)}
-                                                    className="text-center font-mono text-sm"
-                                                />
-                                            </td>
-                                            <td className="py-4 px-4">
-                                                <StyledInput
-                                                    type="number"
-                                                    placeholder="0.00"
-                                                    value={rate.km_rate}
-                                                    onChange={(e) => handleRateChange(service.id, 'km_rate', e.target.value)}
-                                                    className="text-center font-mono text-sm"
-                                                />
-                                            </td>
-                                            <td className="py-4 px-4 text-right">
-                                                <button
-                                                    onClick={() => saveTariff(service.id)}
-                                                    disabled={saving}
-                                                    className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                                                >
-                                                    <Save size={14} /> Guardar
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <StyledInput
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={rate.base_rate}
+                                                        onChange={(e) => handleRateChange(service.id, 'base_rate', e.target.value)}
+                                                        className="text-center font-mono text-sm"
+                                                    />
+                                                </td>
+                                                <td className="py-4 px-4">
+                                                    <StyledInput
+                                                        type="number"
+                                                        placeholder="0.00"
+                                                        value={rate.km_rate}
+                                                        onChange={(e) => handleRateChange(service.id, 'km_rate', e.target.value)}
+                                                        className="text-center font-mono text-sm"
+                                                    />
+                                                </td>
+                                                <td className="py-4 px-4 text-right">
+                                                    <button
+                                                        onClick={() => saveTariff(service.id)}
+                                                        disabled={saving}
+                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-all shadow-sm active:scale-95 disabled:opacity-50"
+                                                    >
+                                                        <Save size={14} /> Guardar
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                             </tbody>
                         </table>
                     </div>
