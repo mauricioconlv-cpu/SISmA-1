@@ -1,25 +1,44 @@
+
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 import { ArrowLeft, Save, DollarSign, Truck, AlertCircle } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { SERVICE_TYPES } from '../../utils/constants';
 
-const ALLOWED_SERVICES = ['tow', 'jump', 'tire', 'gas'];
-
 const ClientTariffs = ({ clientId, onBack }) => {
+    const { user } = useAuth();
     const [client, setClient] = useState(null);
     const [tariffs, setTariffs] = useState({});
+    const [allowedServices, setAllowedServices] = useState([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        fetchData();
-    }, [clientId]);
+        if (user?.company_id && clientId) {
+            fetchData();
+        }
+    }, [clientId, user]);
 
     const fetchData = async () => {
         setLoading(true);
         try {
-            // 1. Fetch Client Name
+            // 1. Fetch Company Configuration (Enabled Services)
+            const { data: companyData, error: companyError } = await supabase
+                .from('companies')
+                .select('enabled_services')
+                .eq('id', user.company_id)
+                .single();
+
+            if (companyError) {
+                console.error("Error fetching company config:", companyError);
+                // Fallback or alert?
+            }
+
+            const enabled = companyData?.enabled_services || [];
+            setAllowedServices(enabled);
+
+            // 2. Fetch Client Name
             const { data: clientData, error: clientError } = await supabase
                 .from('clients')
                 .select('name')
@@ -29,7 +48,7 @@ const ClientTariffs = ({ clientId, onBack }) => {
             if (clientError) throw clientError;
             setClient(clientData);
 
-            // 2. Fetch Existing Tariffs
+            // 3. Fetch Existing Tariffs
             const { data: tariffData, error: tariffError } = await supabase
                 .from('client_tariffs')
                 .select('*')
@@ -132,7 +151,7 @@ const ClientTariffs = ({ clientId, onBack }) => {
                             </thead>
                             <tbody className="divide-y divide-slate-100">
                                 {(SERVICE_TYPES || [])
-                                    .filter(s => ALLOWED_SERVICES.includes(s.id))
+                                    .filter(s => allowedServices.includes(s.id))
                                     .map((service) => {
                                         const rate = tariffs[service.id] || { base_rate: '', km_rate: '' };
                                         return (
