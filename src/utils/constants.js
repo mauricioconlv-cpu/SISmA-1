@@ -2,10 +2,10 @@ import { Truck, Battery, Disc, Fuel, Key, Wrench, Zap, Home, Pill, Hammer } from
 
 export const SERVICE_TYPES = [
     // VEHICULAR
-    { id: 'grua', label: 'Grúa', category: 'vehicular', icon: 'Truck' },
-    { id: 'corriente', label: 'Paso de Corriente', category: 'vehicular', icon: 'Battery' },
-    { id: 'llanta', label: 'Cambio de Llanta', category: 'vehicular', icon: 'Disc' },
-    { id: 'gasolina', label: 'Suministro Gasolina', category: 'vehicular', icon: 'Fuel' },
+    { id: 'tow', label: 'Grúa', category: 'vehicular', icon: 'Truck' },
+    { id: 'jump', label: 'Paso de Corriente', category: 'vehicular', icon: 'Battery' },
+    { id: 'tire', label: 'Cambio de Llanta', category: 'vehicular', icon: 'Disc' },
+    { id: 'gas', label: 'Suministro Gasolina', category: 'vehicular', icon: 'Fuel' },
     { id: 'cerrajeria_auto', label: 'Cerrajería Auto', category: 'vehicular', icon: 'Key' },
 
     // HOGAR
@@ -43,6 +43,16 @@ export const DEFAULT_COMPANIES = [
         email: 'admin@hogarexpress.com',
         logo: null,
         modules: ['plomeria', 'electricidad', 'cerrajeria_hogar'],
+        active: true
+    },
+    {
+        id: 'cliente_01',
+        name: 'Grúas La Fundición',
+        rfc: 'GLF20230505ABC',
+        address: 'Av. Fundición 500, Monterrey, NL',
+        email: 'gruaslafundicion@gmail.com',
+        logo: null,
+        modules: ['tow', 'jump', 'tire', 'gas'],
         active: true
     }
 ];

@@ -7,6 +7,7 @@ import { SERVICE_TYPES } from '../../utils/constants';
 import { useAuth } from '../../context/AuthContext';
 import { useClients } from '../../context/ClientContext';
 import { useServices } from '../../context/ServiceContext';
+import { useCompanies } from '../../context/CompanyContext';
 
 // Sub-components
 import WizardVehicle from './WizardVehicle';
@@ -28,9 +29,48 @@ const SERVICE_STATUS = {
 };
 
 const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
-    const { hasPermission } = useAuth();
-    const { clients } = useClients();
-    const { addService, updateService, getNextFolio, getServiceByFolio } = useServices();
+    // --- EMERGENCY FALLBACK ---
+    const EMERGENCY_SERVICES = [
+        { id: 'grua', label: 'Grúa', category: 'vehicular', icon: 'Truck' },
+        { id: 'corriente', label: 'Paso de Corriente', category: 'vehicular', icon: 'Battery' },
+        { id: 'llanta', label: 'Cambio de Llanta', category: 'vehicular', icon: 'Disc' },
+        { id: 'gasolina', label: 'Suministro Gasolina', category: 'vehicular', icon: 'Fuel' }
+    ];
+
+    // --- CONTEXT SAFETY ---
+    // Prevent destructuring crash if context is missing
+    const auth = useAuth();
+    const hasPermission = auth?.hasPermission || (() => true);
+
+    const servicesContext = useServices();
+    const addService = servicesContext?.addService || (async () => { });
+    const updateService = servicesContext?.updateService || (async () => { });
+    const getNextFolio = servicesContext?.getNextFolio || (() => 'OFFLINE');
+    const getServiceByFolio = servicesContext?.getServiceByFolio || (() => null);
+
+    const clientContext = useClients();
+    const clients = clientContext?.clients || [];
+
+    const companyContext = useCompanies();
+    const getCompanyById = companyContext?.getCompanyById || (() => null);
+
+    // --- SERVICE FILTERING LOGIC ---
+    let availableServices = [];
+
+    // LÓGICA DE PROPAGACIÓN DE DATOS (DATA DRIVEN)
+    // El Contexto de Auth ya tiene hidratada la info de la empresa
+    if (user?.company?.enabled_services) {
+        // Obtenemos directamente del objeto user enriquecido
+        availableServices = user.company.enabled_services;
+    } else {
+        // Fallback para SuperAdmin u otros
+        if (user?.rol === 'superadmin') {
+            availableServices = SERVICE_TYPES;
+        } else {
+            // Último recurso: Filtrar por permisos planos
+            availableServices = SERVICE_TYPES.filter(s => hasPermission(s.id) || hasPermission('all'));
+        }
+    }
 
     // --- STATE ---
     const [step, setStep] = useState(0); // 0: Selección, 1: Datos, 2: Asignación
@@ -468,6 +508,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     return (
         <div className={`max-w-7xl mx-auto bg-white shadow-2xl rounded-2xl overflow-hidden transition-all duration-300`}>
 
+
             {showUnlockModal && (
                 <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black bg-opacity-60 backdrop-blur-sm">
                     <div className="bg-white rounded-xl shadow-2xl p-8 w-[500px] max-w-full relative animate-fadeIn">
@@ -530,7 +571,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                         <span className="text-slate-400 text-sm font-mono">#{folio}</span>
                     </div>
                     <h2 className="text-4xl font-bold tracking-tight">
-                        {serviceId ? `Modificando Servicio #${folio}` : (step === 1 ? 'Reporte de Servicio' : step === 2 ? 'Asignación de Unidad' : 'Monitoreo en Tiempo Real')}
+                        {serviceId ? `Modificando Servicio #${folio}` : (step === 0 ? 'Crear Nuevo Servicio' : step === 1 ? 'Reporte de Servicio' : step === 2 ? 'Asignación de Unidad' : 'Monitoreo en Tiempo Real')}
                     </h2>
                 </div>
                 <div className="text-right">
@@ -590,26 +631,34 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     <div className="animate-fade-in">
                         <SectionTitle title="¿Qué tipo de servicio desea registrar?" icon={<CheckCircle size={20} />} />
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {SERVICE_TYPES.filter(s => hasPermission(s.id)).map(service => (
-                                <button
-                                    key={service.id}
-                                    onClick={() => handleServiceSelect(service)}
-                                    className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
-                                >
-                                    <div className="bg-blue-50 text-blue-600 p-4 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                        {getIcon(service.icon)}
-                                    </div>
-                                    <div>
-                                        <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{service.label}</h3>
-                                        <p className="text-xs text-slate-400 uppercase mt-1">{service.category}</p>
-                                    </div>
-                                </button>
-                            ))}
+                            {availableServices.length > 0 ? (
+                                availableServices.map(service => (
+                                    <button
+                                        key={service.id}
+                                        onClick={() => handleServiceSelect(service)}
+                                        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
+                                    >
+                                        <div className="bg-blue-50 text-blue-600 p-4 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                            {getIcon(service.icon)}
+                                        </div>
+                                        <div>
+                                            <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{service.label}</h3>
+                                            <p className="text-xs text-slate-400 uppercase mt-1">{service.category}</p>
+                                        </div>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="col-span-4 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                    <p className="text-slate-500 font-bold mb-1">No hay servicios contratados (Modo Emergencia)</p>
+                                    <p className="text-xs text-slate-400">Si ve esto, contacte a soporte técnico (Error 500).</p>
+                                </div>
+                            )}
                         </div>
                     </div>
                 )}
 
                 {/* STEP 1: DATOS DEL SERVICIO */}
+
                 {step === 1 && (
                     <Step1Report
                         formData={formData}

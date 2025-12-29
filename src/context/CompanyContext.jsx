@@ -10,7 +10,23 @@ export const CompanyProvider = ({ children }) => {
     useEffect(() => {
         const storedCompanies = localStorage.getItem('towing_companies');
         if (storedCompanies) {
-            setCompanies(JSON.parse(storedCompanies));
+            let companiesList = JSON.parse(storedCompanies);
+
+            // DATA SEEDING FIX: Ensure defaulting companies exist
+            let updated = false;
+            DEFAULT_COMPANIES.forEach(defComp => {
+                if (!companiesList.find(c => c.id === defComp.id)) {
+                    companiesList.push(defComp);
+                    updated = true;
+                }
+            });
+
+            if (updated) {
+                localStorage.setItem('towing_companies', JSON.stringify(companiesList));
+                console.log("Sistema: Datos de empresas actualizados (Seeding)");
+            }
+
+            setCompanies(companiesList);
         } else {
             setCompanies(DEFAULT_COMPANIES);
             localStorage.setItem('towing_companies', JSON.stringify(DEFAULT_COMPANIES));
