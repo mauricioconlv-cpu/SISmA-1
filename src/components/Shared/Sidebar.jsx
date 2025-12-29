@@ -1,4 +1,5 @@
-import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 'lucide-react';
+import React from 'react';
+import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2 } from 'lucide-react';
 import { ROLES } from '../../utils/constants';
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
@@ -13,15 +14,8 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // --- ADMINISTRACIÓN (Dueños y Superadmin) ---
     const canAccessAdmin = user?.role === 'owner' || user?.rol === ROLES.SUPERADMIN || user?.rol === 'owner'; // Handle both role props just in case
 
-    if (canAccessAdmin) {
-        // Separador Visual (Opcional, o simplemente agregar los items)
-
-        // Gestión de Equipo
-        menuItems.push({ id: 'team-management', label: 'Gestión de Equipo', icon: <Users size={20} /> });
-
-        // Clientes y Tarifas (Reusing client-management ID but ensuring label matches request)
-        menuItems.push({ id: 'client-management', label: 'Clientes y Tarifas', icon: <Building size={20} /> });
-    }
+    // The previous conditional logic for 'canAccessAdmin' and pushing items is removed
+    // as the new structure uses direct conditional rendering in JSX.
 
     return (
         <div className="w-64 bg-slate-900 text-white flex flex-col h-screen fixed left-0 top-0 shadow-xl z-50">
@@ -41,15 +35,66 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                     <button
                         key={item.id}
                         onClick={() => onTabChange(item.id)}
-                        className={`w-full flex items-center gap-3 px-4 py-3 rounded transition-all ${activeTab === item.id
-                            ? 'bg-blue-600 text-white shadow-lg'
+                        className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === item.id
+                            ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/30 font-medium'
                             : 'text-slate-400 hover:bg-slate-800 hover:text-white'
                             }`}
                     >
-                        {item.icon}
-                        <span className="font-medium">{item.label}</span>
+                        <div className={`${activeTab === item.id ? 'text-white' : 'text-slate-500 group-hover:text-white'}`}>
+                            {item.icon}
+                        </div>
+                        <span className="text-sm">{item.label}</span>
                     </button>
                 ))}
+
+                {/* SECCIÓN ADMINISTRACIÓN (Solo Owners) */}
+                {user?.role === 'owner' && (
+                    <div className="pt-4 mt-4 border-t border-slate-700">
+                        <p className="px-4 text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">
+                            Administración
+                        </p>
+                        <button
+                            onClick={() => onTabChange('team-management')}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'team-management'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                }`}
+                        >
+                            <UserCog size={20} />
+                            <span className="text-sm">Gestión de Equipo</span>
+                        </button>
+                        <button
+                            onClick={() => onTabChange('client-management')}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'client-management'
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/30'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                }`}
+                        >
+                            <Users size={20} />
+                            <span className="text-sm">Clientes y Tarifas</span>
+                        </button>
+                    </div>
+                )}
+
+                {/* SECCIÓN PLATAFORMA (Solo Superadmin) */}
+                {user?.role === 'superadmin' && (
+                    <div className="pt-4 mt-4 border-t border-slate-700">
+                        <p className="px-4 text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">
+                            Gestión de Plataforma
+                        </p>
+                        <button
+                            onClick={() => onTabChange('platform-companies')}
+                            className={`w-full flex items-center space-x-3 px-4 py-3 rounded-xl transition-all duration-200 group ${activeTab === 'platform-companies'
+                                ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30'
+                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+                                }`}
+                        >
+                            <Building2 size={20} />
+                            <span className="text-sm">Empresas SaaS</span>
+                        </button>
+                    </div>
+                )}
+
             </nav>
 
             <div className="p-4 border-t border-slate-700">

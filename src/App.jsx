@@ -13,6 +13,7 @@ import TeamManagement from './components/Admin/TeamManagement';
 import CompanyManagement from './components/Admin/CompanyManagement';
 import ClientManagement from './components/Admin/ClientManagement';
 import ClientTariffs from './components/Admin/ClientTariffs';
+import PlatformCompanies from './components/Admin/PlatformCompanies';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import { DEFAULT_CLIENTES, DEFAULT_GRUAS, DEFAULT_OPERADORES, DEFAULT_USUARIOS, DEFAULT_TARIFAS } from './utils/constants';
@@ -75,6 +76,8 @@ const AppContent = () => {
                 return <ClientManagement onManageTariffs={handleManageTariffs} />;
             case 'client-tariffs':
                 return <ClientTariffs clientId={selectedClientId} onBack={() => setActiveTab('client-management')} />;
+            case 'platform-companies':
+                return <PlatformCompanies />;
             default:
                 return <Dashboard onNavigate={setActiveTab} />;
         }
