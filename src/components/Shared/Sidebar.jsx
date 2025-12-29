@@ -2,9 +2,6 @@ import { Truck, History, Settings, LogOut, Home, Users, Building, Shield } from 
 import { ROLES } from '../../utils/constants';
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
-    // VISUAL DEBUG REQUESTED BY USER
-    console.log("Rol del usuario actual:", user?.role);
-
     const menuItems = [
         { id: 'dashboard', label: 'Inicio', icon: <Home size={20} /> },
         { id: 'new-service', label: 'Nuevo Servicio', icon: <Truck size={20} /> },

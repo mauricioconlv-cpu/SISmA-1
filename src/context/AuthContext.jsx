@@ -39,25 +39,39 @@ export const AuthProvider = ({ children }) => {
             id: supabaseUser.id,
             email: supabaseUser.email,
             auth_id: supabaseUser.id,
-            isAuthenticated: true
+            isAuthenticated: true,
+            role: ROLES.OPERATOR, // Default safe role
+            rol: ROLES.OPERATOR   // Default safe rol
         };
 
-        // --- DYNAMIC PERMISSIONS & ROLES ---
         try {
+            if (!supabaseUser?.id) return; // Guard clause to prevent 400 errors
+
             // 1. Fetch Profile/User Data (REAL ARCHITECTURE)
+            console.log("Buscando perfil para ID:", supabaseUser.id);
+
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('*') // Changed to * as requested to ensure role and everything else is fetched
+                .select('*') // Bringing everything
                 .eq('id', supabaseUser.id)
                 .single();
 
-            // Assign Role from DB or Default
-            if (profile && profile.role) {
-                appUser.role = profile.role;
-            } else {
-                appUser.role = ROLES.OPERATOR; // Default safety
+            if (profileError) {
+                console.error("Error fetching profile from DB:", profileError);
             }
-            appUser.rol = appUser.role; // Helper for legacy compatibility
+
+            if (profile) {
+                console.log("✅ Perfil cargado de DB:", profile);
+                // MERGE: Combine auth user with profile data as requested
+                appUser = { ...appUser, ...profile };
+
+                // Ensure helper 'rol' matches 'role' if profile overrides it
+                if (profile.role) {
+                    appUser.rol = profile.role;
+                }
+            } else {
+                console.warn("⚠️ No se encontró perfil en DB para este usuario. Usando defaults.");
+            }
 
             // (Optional) Keep Superadmin override just in case of DB sync issues during dev
             if (supabaseUser.email === 'mauricioconlv@gmail.com') {
@@ -66,13 +80,16 @@ export const AuthProvider = ({ children }) => {
             }
 
             // Determine Company ID
-            // For now, logic remains similar: map specific emails to specific IDs (or fetch from companies table as before)
-            if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
-                appUser.company_id = 'cliente_01';
-            } else if (supabaseUser.email === 'admin@gruas.com') {
-                appUser.company_id = 'admin_corp';
-            } else {
-                appUser.company_id = null;
+            // For now, logic remains similar: map specific emails to specific IDs
+            // BUT if profile had company_id, it is already in appUser due to merge!
+            if (!appUser.company_id) {
+                if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
+                    appUser.company_id = 'cliente_01';
+                } else if (supabaseUser.email === 'admin@gruas.com') {
+                    appUser.company_id = 'admin_corp';
+                } else {
+                    appUser.company_id = null;
+                }
             }
 
             // 2. FETCH COMPANY CONFIGURATION (REAL ARCHITECTURE)
@@ -81,15 +98,13 @@ export const AuthProvider = ({ children }) => {
                 const { data: companyData } = await supabase
                     .from('companies')
                     .select('*')
-                    .eq('email', supabaseUser.email) // Linking by email for now as per script
-                    .single();
+                    .or(`email.eq.${supabaseUser.email},id.eq.${appUser.company_id}`) // Try to match by ID or Email
+                    .maybeSingle(); // Use maybeSingle to avoid error if 0 or >1
 
-                // If we found a real company by email, use its ID (Overwriting 'cliente_01' if distinct)
-                // But for safety with existing hardcodes, let's keep 'cliente_01' if the DB returns nothing or if we want to rely on the script's ID
                 let targetCompanyId = appUser.company_id;
 
                 if (companyData) {
-                    appUser.nombre = companyData.name;
+                    appUser.nombre = appUser.nombre || companyData.name; // Use company name if user has no name
                     targetCompanyId = companyData.id;
                     appUser.company_id = targetCompanyId; // Update to real UUID
                 }
@@ -113,8 +128,6 @@ export const AuthProvider = ({ children }) => {
                         enabled_services: enabledServices
                     };
 
-                    // DEBUG REQUESTED
-                    console.log('Módulos descargados de DB:', enabledServices);
                     console.log("✅ Configuración de Empresa Cargada:", enabledServices.length, "módulos.");
                 } else {
                     console.warn("⚠️ No se encontraron módulos activos para la empresa:", targetCompanyId);
@@ -126,6 +139,7 @@ export const AuthProvider = ({ children }) => {
             console.error("Error mapping session:", error);
         }
 
+        console.log("Usuario final mapeado:", appUser);
         setUser(appUser);
         setLoading(false);
     };

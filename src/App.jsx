@@ -12,6 +12,7 @@ import TeamManagement from './components/Admin/TeamManagement';
 
 import CompanyManagement from './components/Admin/CompanyManagement';
 import ClientManagement from './components/Admin/ClientManagement';
+import ClientTariffs from './components/Admin/ClientTariffs';
 import AdminDashboard from './components/Admin/AdminDashboard';
 import AdminPanel from './components/Admin/AdminPanel';
 import { DEFAULT_CLIENTES, DEFAULT_GRUAS, DEFAULT_OPERADORES, DEFAULT_USUARIOS, DEFAULT_TARIFAS } from './utils/constants';
@@ -23,6 +24,7 @@ const AppContent = () => {
     const { user, loading, logout } = useAuth();
     const [activeTab, setActiveTab] = useState('dashboard');
     const [selectedServiceId, setSelectedServiceId] = useState(null);
+    const [selectedClientId, setSelectedClientId] = useState(null); // New state for tariffs
 
     // Admin Config State
     const [config, setConfig] = useState({
@@ -46,6 +48,11 @@ const AppContent = () => {
         setActiveTab(tab);
     };
 
+    const handleManageTariffs = (clientId) => {
+        setSelectedClientId(clientId);
+        setActiveTab('client-tariffs');
+    };
+
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
@@ -65,7 +72,9 @@ const AppContent = () => {
             case 'company-management':
                 return <CompanyManagement />;
             case 'client-management':
-                return <ClientManagement />;
+                return <ClientManagement onManageTariffs={handleManageTariffs} />;
+            case 'client-tariffs':
+                return <ClientTariffs clientId={selectedClientId} onBack={() => setActiveTab('client-management')} />;
             default:
                 return <Dashboard onNavigate={setActiveTab} />;
         }

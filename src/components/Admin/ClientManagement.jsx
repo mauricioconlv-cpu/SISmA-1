@@ -4,7 +4,7 @@ import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { useClients } from '../../context/ClientContext';
 import { useAuth } from '../../context/AuthContext';
 
-const ClientManagement = () => {
+const ClientManagement = ({ onManageTariffs }) => {
     const { user } = useAuth();
     const { clients, addClient, updateClient, deleteClient } = useClients();
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -144,6 +144,15 @@ const ClientManagement = () => {
                                 <span className="text-xs font-bold text-slate-400 uppercase">Tarifa Local</span>
                                 <span className="font-bold text-green-600">${client.rates?.tarifaLocal || 0}</span>
                             </div> */}
+
+                            <div className="mt-4 flex gap-2">
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); onManageTariffs(client.id); }}
+                                    className="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-lg text-sm font-bold hover:bg-indigo-100 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <DollarSign size={16} /> Gestionar Tarifas
+                                </button>
+                            </div>
                         </div>
                     </div>
                 ))}
