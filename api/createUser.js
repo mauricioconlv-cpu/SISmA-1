@@ -48,7 +48,7 @@ export default async function handler(req, res) {
             {
                 id: userId,
                 email,
-                nombre,
+                full_name: nombre, // Mapped from 'nombre' to 'full_name'
                 rol,
                 role: rol, // Duplicate for consistency as per legacy code
                 company_id: company_id ? Number(company_id) : null,
