@@ -171,14 +171,25 @@ const PlatformCompanies = () => {
     const handleDeleteCompany = async (id, name) => {
         if (window.confirm(`⚠️ PELIGRO ⚠️\n\n¿Estás seguro de que deseas eliminar la empresa "${name}"?\n\nEsta acción eliminará TODOS los datos asociados (vehículos, servicios, usuarios, etc.) y NO se puede deshacer.`)) {
             try {
-                const { error } = await supabase.from('companies').delete().eq('id', id);
-                if (error) throw error;
+                // Call Serverless Function to handle cascade delete (Auth Users + Data)
+                const response = await fetch('/api/deleteCompany', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ company_id: id })
+                });
 
-                alert("Empresa eliminada correctamente.");
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(result.error || "Error desconocido al eliminar.");
+                }
+
+                alert("✅ Empresa y sus usuarios eliminados correctamente.");
                 setCompanies(companies.filter(c => c.id !== id));
+
             } catch (error) {
                 console.error("Error deleting company:", error);
-                alert("Error al eliminar empresa. Verifique que no tenga datos dependientes imposibles de borrar.");
+                alert(`Error al eliminar empresa: ${error.message}`);
             }
         }
     };
