@@ -3,14 +3,22 @@ import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, His
 import { ROLES } from '../../utils/constants';
 
 // Data-Driven Menu Configuration (The Map)
+// Data-Driven Menu Configuration (The Map)
 const MODULE_MENU_MAP = {
-    // Core
-    'tow': { id: 'new-service', label: 'Nuevo Servicio', Icon: Truck },
+    // Core (Tow enables multiple features)
+    'tow': [
+        { id: 'new-service', label: 'Nuevo Servicio', Icon: Truck },
+        { id: 'team-management', label: 'Gestión de Equipo', Icon: UserCog }, // Formerly admin_basic
+        { id: 'cabin', label: 'Cabina', Icon: Building2 } // New request
+    ],
 
-    // Admin / Management
-    'admin_basic': { id: 'team-management', label: 'Gestión de Equipo', Icon: UserCog },
-    'finance': { id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign },
-    'inventory': { id: 'inventory', label: 'Inventario', Icon: Package },
+    // Modules
+    'finance': [
+        { id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign }
+    ],
+    'inventory': [
+        { id: 'inventory', label: 'Inventario', Icon: Package }
+    ]
 };
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
@@ -44,7 +52,12 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
         Object.keys(MODULE_MENU_MAP).forEach(key => {
             // Check if user has this module active OR if they are SuperAdmin (Demo Mode)
             if (isSuperAdmin || activeModuleKeys.has(key)) {
-                menuItems.push(MODULE_MENU_MAP[key]);
+                const items = MODULE_MENU_MAP[key];
+                if (Array.isArray(items)) {
+                    menuItems.push(...items);
+                } else {
+                    menuItems.push(items);
+                }
             }
         });
 

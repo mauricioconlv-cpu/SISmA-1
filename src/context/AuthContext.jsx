@@ -109,34 +109,23 @@ export const AuthProvider = ({ children }) => {
                     appUser.company_id = targetCompanyId; // Update to real UUID
                 }
 
-                // FETCH MODULES TABLE
-                const { data: modules, error: modulesError } = await supabase
-                    .from('company_modules')
-                    .select('module_key')
-                    .eq('company_id', targetCompanyId)
-                    .eq('is_active', true);
+                // USE ENABLED_SERVICES FROM COMPANIES TABLE (The real source of truth)
+                const enabledModules = companyData.enabled_services || [];
 
-                if (modules && !modulesError) {
-                    // Extract just the keys (strings) for Sidebar checking
-                    const moduleKeys = modules.map(m => m.module_key);
+                // Hydrate full service objects for ServiceWizard (only vehicular/home services)
+                // Filter strings to find matching service definitions
+                const hydratedServices = enabledModules.map(key => {
+                    return SERVICE_TYPES.find(st => st.id === key);
+                }).filter(Boolean);
 
-                    // Hydrate full service objects for ServiceWizard (only vehicular/home services)
-                    const enabledServices = modules.map(m => {
-                        return SERVICE_TYPES.find(st => st.id === m.module_key);
-                    }).filter(Boolean); // Remove undefineds (finance, inventory, etc.)
+                appUser.company = {
+                    ...(companyData || {}),
+                    active: true,
+                    enabled_services: hydratedServices, // For Wizard (Objects)
+                    modules: enabledModules // For Sidebar (Strings: 'tow', 'finance')
+                };
 
-                    appUser.company = {
-                        ...(companyData || {}),
-                        active: true,
-                        enabled_services: enabledServices,
-                        modules: moduleKeys // NEW: Raw lego blocks
-                    };
-
-                    console.log("✅ Configuración de Empresa Cargada:", moduleKeys.length, "módulos (raw),", enabledServices.length, "servicios (hydrated).");
-                } else {
-                    console.warn("⚠️ No se encontraron módulos activos para la empresa:", targetCompanyId);
-                    appUser.company = { enabled_services: [], modules: [] };
-                }
+                console.log("✅ Configuración de Empresa Cargada (v2):", enabledModules.length, "módulos activos:", enabledModules);
             }
 
         } catch (error) {
