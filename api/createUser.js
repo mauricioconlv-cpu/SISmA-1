@@ -48,9 +48,8 @@ export default async function handler(req, res) {
             {
                 id: userId,
                 email,
-                full_name: nombre, // Mapped from 'nombre' to 'full_name'
-                rol,
-                role: rol, // Duplicate for consistency as per legacy code
+                full_name: nombre,
+                role: rol, // Correct column is 'role'
                 company_id: company_id ? Number(company_id) : null,
                 permissions: permissions || []
             }
