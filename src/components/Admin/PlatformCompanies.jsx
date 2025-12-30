@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Building2, Search, Plus, Settings, Check, X, Box, Truck } from 'lucide-react';
+import { Building2, Search, Plus, Settings, Check, X, Box, Truck, Trash2 } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 
 const PlatformCompanies = () => {
@@ -139,6 +139,21 @@ const PlatformCompanies = () => {
         fetchCompanies();
     };
 
+    const handleDeleteCompany = async (id, name) => {
+        if (window.confirm(`⚠️ PELIGRO ⚠️\n\n¿Estás seguro de que deseas eliminar la empresa "${name}"?\n\nEsta acción eliminará TODOS los datos asociados (vehículos, servicios, usuarios, etc.) y NO se puede deshacer.`)) {
+            try {
+                const { error } = await supabase.from('companies').delete().eq('id', id);
+                if (error) throw error;
+
+                alert("Empresa eliminada correctamente.");
+                setCompanies(companies.filter(c => c.id !== id));
+            } catch (error) {
+                console.error("Error deleting company:", error);
+                alert("Error al eliminar empresa. Verifique que no tenga datos dependientes imposibles de borrar.");
+            }
+        }
+    };
+
     const filteredCompanies = companies.filter(c =>
         c.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         c.email?.toLowerCase().includes(searchTerm.toLowerCase())
@@ -234,13 +249,22 @@ const PlatformCompanies = () => {
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={() => openModulesModal(company)}
-                                        className="text-slate-400 hover:text-purple-600 transition-colors p-2 hover:bg-purple-50 rounded-full"
-                                        title="Configurar Módulos"
-                                    >
-                                        <Settings size={18} />
-                                    </button>
+                                    <div className="flex justify-end gap-2">
+                                        <button
+                                            onClick={() => openModulesModal(company)}
+                                            className="text-slate-400 hover:text-purple-600 transition-colors p-2 hover:bg-purple-50 rounded-full"
+                                            title="Configurar Módulos"
+                                        >
+                                            <Settings size={18} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDeleteCompany(company.id, company.name)}
+                                            className="text-slate-400 hover:text-red-600 transition-colors p-2 hover:bg-red-50 rounded-full"
+                                            title="Eliminar Empresa"
+                                        >
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

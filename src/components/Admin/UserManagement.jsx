@@ -19,6 +19,7 @@ const UserManagement = () => {
     const [formData, setFormData] = useState({
         nombre: '',
         email: '',
+        password: '', // New Password Field
         rol: ROLES.USER,
         company_id: '',
         permissions: []
@@ -53,19 +54,34 @@ const UserManagement = () => {
     // Helpers replaced by real DB calls
     const addUser = async (userData) => {
         try {
-            const { error } = await supabase.from('profiles').insert([userData]);
-            if (error) throw error;
+            // Call Serverless Function
+            const response = await fetch('/api/createUser', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(userData)
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.error || 'Error en el servidor');
+            }
+
             fetchUsers();
-            alert("Usuario creado en perfiles (Nota: La cuenta de Auth debe crearse por separado)");
+            alert("✅ Usuario creado exitosamente en Auth y Perfiles. Ya puede iniciar sesión.");
         } catch (e) {
             console.error(e);
-            alert("Error al crear usuario en perfiles");
+            alert("Error al crear usuario: " + e.message);
         }
     };
 
     const updateUser = async (id, userData) => {
+        // Remove password from update (not handled here)
+        const { password, ...updateData } = userData;
         try {
-            const { error } = await supabase.from('profiles').update(userData).eq('id', id);
+            const { error } = await supabase.from('profiles').update(updateData).eq('id', id);
             if (error) throw error;
             fetchUsers();
         } catch (e) {
@@ -77,6 +93,8 @@ const UserManagement = () => {
     const deleteUser = async (id) => {
         try {
             const { error } = await supabase.from('profiles').delete().eq('id', id);
+            // Also should delete from Auth but requires Admin API. 
+            // For now only profile is deleted to prevent access via app.
             if (error) throw error;
             fetchUsers();
         } catch (e) {
@@ -98,6 +116,7 @@ const UserManagement = () => {
             setFormData({
                 nombre: targetUser.nombre,
                 email: targetUser.email,
+                password: '', // Don't show existing password
                 rol: targetUser.rol,
                 company_id: targetUser.company_id || '',
                 permissions: targetUser.permissions || []
@@ -107,6 +126,7 @@ const UserManagement = () => {
             setFormData({
                 nombre: '',
                 email: '',
+                password: '',
                 rol: ROLES.USER,
                 company_id: currentUser.rol === ROLES.SUPERADMIN ? '' : currentUser.company_id,
                 permissions: []
@@ -117,6 +137,8 @@ const UserManagement = () => {
 
     const handleSaveUser = () => {
         if (!formData.nombre || !formData.email) return alert("Nombre y Email son obligatorios");
+        if (!userToEdit && !formData.password) return alert("La contraseña es obligatoria para nuevos usuarios.");
+
         if (currentUser.rol === ROLES.SUPERADMIN && !formData.company_id && formData.rol !== ROLES.SUPERADMIN) {
             return alert("Debe asignar una empresa al usuario.");
         }
@@ -298,8 +320,21 @@ const UserManagement = () => {
                                 </div>
                                 <div>
                                     <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Email</label>
-                                    <StyledInput value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
+                                    <StyledInput type="email" value={formData.email} onChange={e => setFormData({ ...formData, email: e.target.value })} />
                                 </div>
+
+                                {!userToEdit && (
+                                    <div className="col-span-1 md:col-span-2">
+                                        <label className="block text-xs font-bold text-slate-500 uppercase mb-2">Contraseña Provisional</label>
+                                        <StyledInput
+                                            type="password"
+                                            placeholder="********"
+                                            value={formData.password}
+                                            onChange={e => setFormData({ ...formData, password: e.target.value })}
+                                        />
+                                        <p className="text-[10px] text-slate-400 mt-1">El usuario podrá cambiarla después (Futuro).</p>
+                                    </div>
+                                )}
 
                                 {/* COMPANY SELECTOR - ONLY FOR SUPER ADMIN */}
                                 {currentUser?.rol === ROLES.SUPERADMIN && (
