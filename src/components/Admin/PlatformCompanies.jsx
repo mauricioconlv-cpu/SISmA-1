@@ -120,6 +120,11 @@ const PlatformCompanies = () => {
         const formData = new FormData(e.target);
         const name = formData.get('name');
         const email = formData.get('email');
+        const password = formData.get('password');
+
+        if (!password) {
+            return alert("La contraseña provisional es obligatoria.");
+        }
 
         // 1. Create Company
         const { data: company, error } = await supabase
@@ -133,7 +138,34 @@ const PlatformCompanies = () => {
             return;
         }
 
-        alert("Empresa creada. El dueño debe registrarse con este email: " + email);
+        // 2. Create Owner User (via Backend API)
+        try {
+            const response = await fetch('/api/createUser', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    nombre: 'Admin ' + name, // Default owner name
+                    email: email,
+                    password: password,
+                    rol: 'owner', // Special role for company creator
+                    company_id: company.id,
+                    permissions: ['all'] // Owners get all permissions by default
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                console.error("User creation failed:", result);
+                alert(`Empresa creada, PERO hubo un error creando el usuario dueño: ${result.error}. Deberás crearlo manualmente en Gestión de Usuarios.`);
+            } else {
+                alert(`✅ Empresa "${name}" y usuario dueño creados exitosamente.\n\nEmail: ${email}\nPassword: ${password}`);
+            }
+
+        } catch (apiError) {
+            console.error("API Error:", apiError);
+            alert("Error de conexión al crear el usuario dueño.");
+        }
 
         setShowNewCompanyModal(false);
         fetchCompanies();
@@ -347,6 +379,11 @@ const PlatformCompanies = () => {
                             <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Email del Dueño</label>
                                 <StyledInput name="email" type="email" placeholder="owner@empresa.com" required />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Contraseña Provisional</label>
+                                <StyledInput name="password" type="text" placeholder="123456" required />
+                                <p className="text-xs text-slate-500 mt-1">Se usará para crear la cuenta del dueño.</p>
                             </div>
                             <div className="flex justify-end gap-3 mt-6">
                                 <button type="button" onClick={() => setShowNewCompanyModal(false)} className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg">Cancelar</button>
