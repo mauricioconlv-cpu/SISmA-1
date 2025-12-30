@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Truck, Calendar, Clock, AlertCircle, PlusCircle, History, DollarSign, TrendingUp, Sun, Moon, Edit3, Check, X } from 'lucide-react';
+import { Truck, Calendar, Clock, AlertCircle, PlusCircle, History, DollarSign, TrendingUp, Sun, Moon, Edit3, Check, X, Building2 } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 import { useServices } from '../../context/ServiceContext';
 import { supabase } from '../../supabaseClient';
@@ -10,50 +10,67 @@ const Dashboard = ({ user, onNavigate }) => {
     // --- STATE FOR DYNAMIC DATA ---
     const [dailyGoal, setDailyGoal] = useState(50000);
     const [availableVehicles, setAvailableVehicles] = useState(0);
+    const [saasStats, setSaasStats] = useState({ companies: 0, users: 0, mrr: 0 }); // New SaaS State
     const [isEditingGoal, setIsEditingGoal] = useState(false);
     const [tempGoal, setTempGoal] = useState(50000);
     const [loadingData, setLoadingData] = useState(true);
 
-    // KPI Calculations (Local Context Data)
+    // Kpi Calculations (Local Context Data)
     const today = new Date().toLocaleDateString();
     const servicesToday = services.filter(s => s.fecha === today).length;
     const pendingServices = services.filter(s => !s.status || s.status === 'Pendiente').length;
-    // const activeServices = services.filter(s => s.status === 'Asignado' || s.status === 'En Camino').length;
 
     // --- FETCH DYNAMIC DATA (POLLING STRATEGY) ---
-    const fetchDashboardData = async (companyId) => {
-        if (!companyId) return;
+    const fetchDashboardData = async (userData) => {
+        if (!userData) return;
+        const companyId = userData.company_id;
+        const role = userData.rol || userData.role;
 
         try {
-            console.log("� DASHBOARD: Iniciando fetch para Company ID:", companyId);
+            console.log("📊 DASHBOARD: Iniciando fetch para Rol/ID:", role, companyId);
 
-            // 1. Fetch Company Goal
-            const { data: companyData } = await supabase
-                .from('companies')
-                .select('daily_revenue_goal')
-                .eq('id', companyId)
-                .single();
+            // 1. SUPER ADMIN LOGIC
+            if (role === 'superadmin' || role === 'super_admin') {
+                // Fetch SaaS KPIs
+                const { count: companiesCount } = await supabase.from('companies').select('*', { count: 'exact', head: true });
+                const { count: activeCompaniesCount } = await supabase.from('companies').select('*', { count: 'exact', head: true }).eq('active', true);
+                const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
 
-            if (companyData) {
-                setDailyGoal(companyData.daily_revenue_goal || 50000);
-                setTempGoal(companyData.daily_revenue_goal || 50000);
-            }
+                // Placeholder for MRR (Future implementation)
+                setSaasStats({
+                    companies: companiesCount || 0,
+                    activeCompanies: activeCompaniesCount || 0,
+                    users: usersCount || 0,
+                    mrr: 0
+                });
 
-            // 2. Fetch Vehicles
-            const { data: vehiclesData, error: vehicleError } = await supabase
-                .from('vehicles')
-                .select('*') // Get everything to inspect
-                .eq('company_id', companyId);
+            } else if (companyId) {
+                // 2. OWNER / OPERATOR LOGIC
 
-            if (vehicleError) throw vehicleError;
+                // Fetch Company Goal
+                const { data: companyData } = await supabase
+                    .from('companies')
+                    .select('daily_revenue_goal')
+                    .eq('id', companyId)
+                    .single();
 
-            console.log('✅ DATOS ENCONTRADOS (Vehículos):', vehiclesData);
+                if (companyData) {
+                    setDailyGoal(companyData.daily_revenue_goal || 50000);
+                    setTempGoal(companyData.daily_revenue_goal || 50000);
+                }
 
-            if (vehiclesData) {
-                // Javascript Filter
-                const count = vehiclesData.filter(v => v.status?.toLowerCase() === 'disponible').length;
-                console.log('📢 DASHBOARD COUNT DISPONIBLE:', count);
-                setAvailableVehicles(count);
+                // Fetch Vehicles
+                const { data: vehiclesData, error: vehicleError } = await supabase
+                    .from('vehicles')
+                    .select('*')
+                    .eq('company_id', companyId);
+
+                if (vehicleError) throw vehicleError;
+
+                if (vehiclesData) {
+                    const count = vehiclesData.filter(v => v.status?.toLowerCase() === 'disponible').length;
+                    setAvailableVehicles(count);
+                }
             }
 
         } catch (error) {
@@ -64,44 +81,24 @@ const Dashboard = ({ user, onNavigate }) => {
     };
 
     useEffect(() => {
-        let attempts = 0;
-        const maxAttempts = 20; // 10 seconds (20 * 500ms)
-        let pollUser = null;
+        // Run immediately if user is ready
+        if (user) fetchDashboardData(user);
 
-        const checkAndFetch = () => {
-            attempts++;
-            // Check if user and company_id are ready
-            if (user && user.company_id) {
-                console.log(`✅ DASHBOARD: Usuario/Empresa encontrado en intento #${attempts}`);
-                if (pollUser) clearInterval(pollUser); // Stop polling
-                fetchDashboardData(user.company_id);
-            } else {
-                console.log(`...buscando empresa (intento ${attempts}/${maxAttempts})...`);
-                if (attempts >= maxAttempts) {
-                    console.warn("⚠️ DASHBOARD: Timeout buscando usuario. Se intentará de nuevo si cambia el contexto.");
-                    if (pollUser) clearInterval(pollUser);
-                }
-            }
-        };
+        // Poll every 10s for updates
+        const interval = setInterval(() => {
+            if (user) fetchDashboardData(user);
+        }, 10000);
 
-        // Execute immediately, then poll
-        checkAndFetch();
-        pollUser = setInterval(checkAndFetch, 500);
-
-        // Also Auto-Reload on Window Focus
         const handleFocus = () => {
-            if (user?.company_id) {
-                console.log("📢 DASHBOARD FOCUS - REFETCH DIRECTO");
-                fetchDashboardData(user.company_id);
-            }
+            if (user) fetchDashboardData(user);
         };
-
         window.addEventListener('focus', handleFocus);
+
         return () => {
-            if (pollUser) clearInterval(pollUser);
+            clearInterval(interval);
             window.removeEventListener('focus', handleFocus);
         };
-    }, [user]); // Re-start polling if user object reference changes
+    }, [user]);
 
     const handleUpdateGoal = async () => {
         if (!user?.company_id) return;
@@ -130,12 +127,11 @@ const Dashboard = ({ user, onNavigate }) => {
     const todayServicesList = services.filter(s => s.fecha === today);
 
     todayServicesList.forEach(s => {
-        // Calculate Cost (Robust check)
         const cost = parseFloat(s.totalCost || s.quotation?.total || 0);
         if (!isNaN(cost)) {
             currentIncome += cost;
 
-            // Determine Shift
+            // Determine Shift logic (remains same)
             try {
                 const timeString = s.hora || '';
                 let hour = 0;
@@ -150,7 +146,6 @@ const Dashboard = ({ user, onNavigate }) => {
                         hour = h;
                     }
                 } else {
-                    // 24h format or simple split
                     const parts = timeString.split(':');
                     if (parts.length > 0) hour = parseInt(parts[0]);
                 }
@@ -167,15 +162,25 @@ const Dashboard = ({ user, onNavigate }) => {
 
     const goalProgress = Math.min((currentIncome / dailyGoal) * 100, 100);
 
-    const kpis = [
+    // --- DYNAMIC CONTENT BASED ON ROLE ---
+    const isSuperAdmin = user?.role === 'superadmin' || user?.rol === 'superadmin' || user?.rol === 'super_admin';
+
+    // Greeting Logic
+    const greetingName = isSuperAdmin
+        ? (user?.nombre || 'Mauricio')
+        : (user?.company?.name || user?.nombre || 'Usuario');
+
+    // KPI Logic
+    const kpis = isSuperAdmin ? [
+        { title: 'Empresas Registradas', value: saasStats.companies.toString(), icon: <Building2 size={24} />, color: 'bg-slate-600' },
+        { title: 'Empresas Activas', value: saasStats.activeCompanies?.toString() || '0', icon: <Check size={24} />, color: 'bg-green-600' },
+        { title: 'Usuarios Totales', value: saasStats.users.toString(), icon: <Calendar size={24} />, color: 'bg-indigo-600' },
+        { title: 'MRR (Est.)', value: `$${saasStats.mrr}`, icon: <TrendingUp size={24} />, color: 'bg-blue-600' },
+    ] : [
         { title: 'Servicios de Hoy', value: servicesToday.toString(), icon: <Calendar size={24} />, color: 'bg-blue-500' },
         { title: 'Grúas Disponibles', value: availableVehicles.toString(), icon: <Truck size={24} />, color: 'bg-green-500' },
         { title: 'Servicios Pendientes', value: pendingServices.toString(), icon: <AlertCircle size={24} />, color: 'bg-amber-500' },
     ];
-
-    // Determine Greeting Name
-    // Priority: Company Name > User Name > 'Usuario'
-    const greetingName = user?.company?.name || user?.nombre || 'Usuario';
 
     return (
         <div className="max-w-7xl mx-auto animate-fade-in">
@@ -185,7 +190,9 @@ const Dashboard = ({ user, onNavigate }) => {
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">
                         Bienvenido, <span className="text-blue-600">{greetingName}</span>
                     </h1>
-                    <p className="text-slate-500">Aquí tienes un resumen de la operación de hoy.</p>
+                    <p className="text-slate-500">
+                        {isSuperAdmin ? 'Resumen general de la plataforma SaaS.' : 'Aquí tienes un resumen de la operación de hoy.'}
+                    </p>
                 </div>
                 <div className="text-right hidden md:block">
                     <p className="text-2xl font-bold text-slate-700">{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
@@ -193,96 +200,98 @@ const Dashboard = ({ user, onNavigate }) => {
                 </div>
             </div>
 
-            {/* FINANCIAL DASHBOARD */}
-            <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-10">
-                <SectionTitle title="Indicadores Financieros" icon={<DollarSign size={20} />} />
+            {/* CONDITIONAL FINANCIAL DASHBOARD (Only for Owners/Operators) */}
+            {!isSuperAdmin && (
+                <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-10">
+                    <SectionTitle title="Indicadores Financieros" icon={<DollarSign size={20} />} />
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* MAIN GOAL CARD */}
-                    <div className="lg:col-span-2 bg-slate-50 rounded-xl p-6 border border-slate-200">
-                        <div className="flex justify-between items-end mb-4">
-                            <div>
-                                <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-1">Ingresos de Hoy</p>
-                                <h3 className="text-4xl font-black text-slate-800">
-                                    ${currentIncome.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
-                                </h3>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-slate-400 text-xs font-bold uppercase mb-1">Meta Diaria</p>
-                                {isEditingGoal ? (
-                                    <div className="flex items-center gap-2 justify-end">
-                                        <input
-                                            type="number"
-                                            value={tempGoal}
-                                            onChange={(e) => setTempGoal(Number(e.target.value))}
-                                            className="w-32 px-2 py-1 text-right font-bold text-slate-700 bg-white border border-slate-300 rounded focus:border-blue-500 outline-none"
-                                            autoFocus
-                                        />
-                                        <button onClick={handleUpdateGoal} className="p-1 bg-green-500 text-white rounded hover:bg-green-600">
-                                            <Check size={16} />
-                                        </button>
-                                        <button onClick={() => setIsEditingGoal(false)} className="p-1 bg-gray-400 text-white rounded hover:bg-gray-500">
-                                            <X size={16} />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <div className="flex items-center gap-2 justify-end group cursor-pointer" onClick={() => setIsEditingGoal(true)}>
-                                        <p className="text-xl font-bold text-slate-600">${dailyGoal.toLocaleString()}</p>
-                                        <Edit3 size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Progress Bar */}
-                        <div className="relative h-6 bg-slate-200 rounded-full overflow-hidden mb-2">
-                            <div
-                                className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-1000 ease-out"
-                                style={{ width: `${goalProgress}%` }}
-                            ></div>
-                        </div>
-                        <div className="flex justify-between text-xs font-bold text-slate-400">
-                            <span>0%</span>
-                            <span>{goalProgress.toFixed(1)}% Completado</span>
-                            <span>100%</span>
-                        </div>
-                    </div>
-
-                    {/* SHIFT BREAKDOWN */}
-                    <div className="grid grid-cols-1 gap-4">
-                        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-orange-100 text-orange-600 p-2 rounded-lg"><Sun size={18} /></div>
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                        {/* MAIN GOAL CARD */}
+                        <div className="lg:col-span-2 bg-slate-50 rounded-xl p-6 border border-slate-200">
+                            <div className="flex justify-between items-end mb-4">
                                 <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase">Matutino (0-8h)</p>
-                                    <p className="font-bold text-slate-700">${shift1.toLocaleString()}</p>
+                                    <p className="text-slate-500 font-bold uppercase text-xs tracking-wider mb-1">Ingresos de Hoy</p>
+                                    <h3 className="text-4xl font-black text-slate-800">
+                                        ${currentIncome.toLocaleString('es-MX', { minimumFractionDigits: 2 })}
+                                    </h3>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-slate-400 text-xs font-bold uppercase mb-1">Meta Diaria</p>
+                                    {isEditingGoal ? (
+                                        <div className="flex items-center gap-2 justify-end">
+                                            <input
+                                                type="number"
+                                                value={tempGoal}
+                                                onChange={(e) => setTempGoal(Number(e.target.value))}
+                                                className="w-32 px-2 py-1 text-right font-bold text-slate-700 bg-white border border-slate-300 rounded focus:border-blue-500 outline-none"
+                                                autoFocus
+                                            />
+                                            <button onClick={handleUpdateGoal} className="p-1 bg-green-500 text-white rounded hover:bg-green-600">
+                                                <Check size={16} />
+                                            </button>
+                                            <button onClick={() => setIsEditingGoal(false)} className="p-1 bg-gray-400 text-white rounded hover:bg-gray-500">
+                                                <X size={16} />
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center gap-2 justify-end group cursor-pointer" onClick={() => setIsEditingGoal(true)}>
+                                            <p className="text-xl font-bold text-slate-600">${dailyGoal.toLocaleString()}</p>
+                                            <Edit3 size={16} className="text-slate-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Sun size={18} /></div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase">Vespertino (8-16h)</p>
-                                    <p className="font-bold text-slate-700">${shift2.toLocaleString()}</p>
-                                </div>
+
+                            {/* Progress Bar */}
+                            <div className="relative h-6 bg-slate-200 rounded-full overflow-hidden mb-2">
+                                <div
+                                    className="absolute top-0 left-0 h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-1000 ease-out"
+                                    style={{ width: `${goalProgress}%` }}
+                                ></div>
+                            </div>
+                            <div className="flex justify-between text-xs font-bold text-slate-400">
+                                <span>0%</span>
+                                <span>{goalProgress.toFixed(1)}% Completado</span>
+                                <span>100%</span>
                             </div>
                         </div>
-                        <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><Moon size={18} /></div>
-                                <div>
-                                    <p className="text-xs font-bold text-slate-400 uppercase">Nocturno (16-24h)</p>
-                                    <p className="font-bold text-slate-700">${shift3.toLocaleString()}</p>
+
+                        {/* SHIFT BREAKDOWN */}
+                        <div className="grid grid-cols-1 gap-4">
+                            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-orange-100 text-orange-600 p-2 rounded-lg"><Sun size={18} /></div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase">Matutino (0-8h)</p>
+                                        <p className="font-bold text-slate-700">${shift1.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-blue-100 text-blue-600 p-2 rounded-lg"><Sun size={18} /></div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase">Vespertino (8-16h)</p>
+                                        <p className="font-bold text-slate-700">${shift2.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="bg-white p-4 rounded-xl border border-slate-100 shadow-sm flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <div className="bg-indigo-100 text-indigo-600 p-2 rounded-lg"><Moon size={18} /></div>
+                                    <div>
+                                        <p className="text-xs font-bold text-slate-400 uppercase">Nocturno (16-24h)</p>
+                                        <p className="font-bold text-slate-700">${shift3.toLocaleString()}</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
-            </div>
+            )}
 
-            {/* KPI CARDS (Original) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+            {/* KPI CARDS (Dynamic) */}
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${isSuperAdmin ? 'lg:grid-cols-4' : 'lg:grid-cols-3'} gap-6 mb-10`}>
                 {kpis.map((kpi, index) => (
                     <div key={index} className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 flex items-center gap-4 transition-transform hover:scale-105 cursor-default">
                         <div className={`${kpi.color} text-white p-4 rounded-xl shadow-lg`}>

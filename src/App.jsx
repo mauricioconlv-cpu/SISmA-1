@@ -58,7 +58,7 @@ const AppContent = () => {
     const renderContent = () => {
         switch (activeTab) {
             case 'dashboard':
-                return <Dashboard onNavigate={handleNavigate} />;
+                return <Dashboard user={user} onNavigate={handleNavigate} />;
             case 'new-service':
                 return <ServiceWizard user={user} config={config} serviceId={selectedServiceId} />;
             case 'history':
@@ -82,7 +82,7 @@ const AppContent = () => {
             case 'inventory':
                 return <Inventory />;
             default:
-                return <Dashboard onNavigate={setActiveTab} />;
+                return <Dashboard user={user} onNavigate={setActiveTab} />;
         }
     };
 

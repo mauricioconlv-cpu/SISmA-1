@@ -38,26 +38,17 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // 1. Dashboard (Always Visible)
     menuItems.push({ id: 'dashboard', label: 'Inicio', Icon: Home });
 
-    // 2. Dynamic Modules (LEGO) - Only for Owners (or users with company context)
-    if (isOwner) {
+    // 2. Dynamic Modules (LEGO) - Owners see active modules, SuperAdmins see EVERYTHING for Demos
+    if (isOwner || isSuperAdmin) {
         // We iterate through the defined MAP to preserve order
         Object.keys(MODULE_MENU_MAP).forEach(key => {
-            // Check if user has this module active
-            // Special case: 'tow' key controls 'new-service' but user might have 'jump', 'tire' etc without 'tow'?
-            // User said: "El botón 'Nuevo Servicio' SOLO debe aparecer si modules.includes('tow')"
-            // I will strictly check keys.
-
-            // For 'admin_basic', if it's not in DB yet, I might fallback allowing it if 'tow' is present?
-            // User said: "El botón 'Gestión de Equipo' SOLO si modules.includes('admin_basic')."
-            // I will strictly follow that. If they don't have it, they don't see it.
-
-            if (activeModuleKeys.has(key)) {
+            // Check if user has this module active OR if they are SuperAdmin (Demo Mode)
+            if (isSuperAdmin || activeModuleKeys.has(key)) {
                 menuItems.push(MODULE_MENU_MAP[key]);
             }
         });
 
-        // History - Always visible or linked to 'tow'? 
-        // Let's keep History always visible for Owners for now
+        // History - Always visible
         menuItems.push({ id: 'history', label: 'Histórico', Icon: HistoryIcon });
     }
 

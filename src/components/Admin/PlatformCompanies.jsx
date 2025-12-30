@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../../supabaseClient';
-import { Building2, Search, Plus, Settings, Check, X, Box } from 'lucide-react';
+import { Building2, Search, Plus, Settings, Check, X, Box, Truck } from 'lucide-react';
 import { SectionTitle, StyledInput } from '../Shared/UIComponents';
 
 const PlatformCompanies = () => {
@@ -10,12 +10,41 @@ const PlatformCompanies = () => {
     const [showNewCompanyModal, setShowNewCompanyModal] = useState(false);
     const [showModulesModal, setShowModulesModal] = useState(false);
     const [selectedCompany, setSelectedCompany] = useState(null);
-    const [availableModules, setAvailableModules] = useState([]);
     const [companyModules, setCompanyModules] = useState(new Set());
+
+    // --- LEGO CONFIGURATION DEFINITION ---
+    const LEGO_CATEGORIES = {
+        verticals: {
+            title: "Verticales (Servicios)",
+            icon: <Truck size={18} className="text-blue-500" />,
+            items: [
+                { key: 'tow', label: 'Grúas', desc: 'Gestión de servicios de grúa y arrastre.' },
+                { key: 'medical', label: 'Ambulancias', desc: 'Despacho y control de unidades médicas.' },
+                { key: 'home', label: 'Hogar / Plomería', desc: 'Servicios de asistencia en el hogar.' },
+                { key: 'roadside', label: 'Vialidad', desc: 'Gasolina, cambio de llanta, paso de corriente.' }
+            ]
+        },
+        modules: {
+            title: "Módulos del Sistema",
+            icon: <Box size={18} className="text-purple-500" />,
+            items: [
+                { key: 'finance', label: 'Finanzas', desc: 'Control de ingresos, egresos y facturación.' },
+                { key: 'inventory', label: 'Inventario', desc: 'Gestión de refacciones y activos.' },
+                { key: 'hr', label: 'Recursos Humanos', desc: 'Gestión de operadores y nómina.' }
+            ]
+        },
+        integrations: {
+            title: "Integraciones y Costos",
+            icon: <Settings size={18} className="text-orange-500" />,
+            items: [
+                { key: 'google_maps', label: 'Google Maps API', desc: 'Autocompletado y cálculo de rutas (Costo Extra).' }
+            ]
+        }
+    };
 
     useEffect(() => {
         fetchCompanies();
-        fetchAvailableModules();
+        // fetchAvailableModules(); // Replaced by static LEGO definition for Admin control
     }, []);
 
     const fetchCompanies = async () => {
@@ -32,27 +61,6 @@ const PlatformCompanies = () => {
             console.error("Error fetching companies:", error);
         } finally {
             setLoading(false);
-        }
-    };
-
-    const fetchAvailableModules = async () => {
-        // Fetch from catalog
-        const { data, error } = await supabase
-            .from('app_modules')
-            .select('*');
-
-        if (!error && data) {
-            setAvailableModules(data);
-        } else {
-            // Fallback if table doesn't exist yet/empty
-            console.warn("Could not fetch app_modules, using defaults");
-            setAvailableModules([
-                { box_key: 'tow', label: 'Grúas' },
-                { box_key: 'jump', label: 'Paso de Corriente' },
-                { box_key: 'tire', label: 'Cambio de Llanta' },
-                { box_key: 'gas', label: 'Suministro Gasolina' },
-                { box_key: 'finance', label: 'Finanzas' },
-            ]);
         }
     };
 
@@ -86,7 +94,6 @@ const PlatformCompanies = () => {
         }
         setCompanyModules(newSet);
 
-        // Optimistic UI, but need to save to DB
         // Save to company_modules
         if (action === 'add') {
             await supabase.from('company_modules').upsert({
@@ -126,8 +133,6 @@ const PlatformCompanies = () => {
             return;
         }
 
-        // 2. We can't create auth user from here easily without service role.
-        // We will just create a placeholder profile if possible or just stop here.
         alert("Empresa creada. El dueño debe registrarse con este email: " + email);
 
         setShowNewCompanyModal(false);
@@ -175,23 +180,53 @@ const PlatformCompanies = () => {
                         <tr>
                             <th className="px-6 py-4">Empresa</th>
                             <th className="px-6 py-4">Dueño / Email</th>
+                            <th className="px-6 py-4 text-center">Estado</th>
                             <th className="px-6 py-4 text-center">Módulos Activos</th>
                             <th className="px-6 py-4 text-right">Acciones</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
                         {filteredCompanies.map(company => (
-                            <tr key={company.id} className="hover:bg-slate-50 transition-colors group">
+                            <tr key={company.id} className={`hover:bg-slate-50 transition-colors group ${!company.active ? 'opacity-60 bg-slate-50' : ''}`}>
                                 <td className="px-6 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-lg flex items-center justify-center font-bold">
+                                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold ${company.active ? 'bg-purple-50 text-purple-600' : 'bg-slate-200 text-slate-500'}`}>
                                             {company.name.charAt(0)}
                                         </div>
-                                        <span className="font-medium text-slate-900">{company.name}</span>
+                                        <div>
+                                            <span className={`font-medium ${company.active ? 'text-slate-900' : 'text-slate-500'}`}>{company.name}</span>
+                                            {!company.active && <span className="ml-2 text-xs text-red-500 font-bold">(Inactivo)</span>}
+                                        </div>
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-slate-600">
                                     {company.email || 'N/A'}
+                                </td>
+                                <td className="px-6 py-4 text-center">
+                                    <button
+                                        onClick={async () => {
+                                            const newStatus = !company.active;
+                                            // Optimistic Update
+                                            setCompanies(companies.map(c => c.id === company.id ? { ...c, active: newStatus } : c));
+
+                                            const { error } = await supabase
+                                                .from('companies')
+                                                .update({ active: newStatus })
+                                                .eq('id', company.id);
+
+                                            if (error) {
+                                                console.error("Error updating status:", error);
+                                                // Revert on error
+                                                setCompanies(companies.map(c => c.id === company.id ? { ...c, active: !newStatus } : c));
+                                                alert("Error al actualizar estado");
+                                            }
+                                        }}
+                                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 ${company.active ? 'bg-green-500' : 'bg-slate-300'}`}
+                                    >
+                                        <span
+                                            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${company.active ? 'translate-x-6' : 'translate-x-1'}`}
+                                        />
+                                    </button>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
@@ -221,7 +256,7 @@ const PlatformCompanies = () => {
             {/* MODULES MODAL */}
             {showModulesModal && selectedCompany && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full overflow-hidden animate-in fade-in zoom-in duration-200">
                         <div className="p-6 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
                                 <h3 className="font-bold text-lg text-slate-800">Configuración LEGO</h3>
@@ -231,35 +266,41 @@ const PlatformCompanies = () => {
                                 <X size={24} />
                             </button>
                         </div>
-                        <div className="p-6 max-h-[60vh] overflow-y-auto space-y-4">
-                            {availableModules.map(module => {
-                                const isActive = companyModules.has(module.box_key);
-                                return (
-                                    <div key={module.box_key}
-                                        onClick={() => toggleModule(module.box_key)}
-                                        className={`flex items-center justify-between p-4 rounded-xl border-2 transition-all cursor-pointer ${isActive
-                                                ? 'border-purple-500 bg-purple-50'
-                                                : 'border-slate-100 hover:border-slate-200'
-                                            }`}>
-                                        <div className="flex items-center gap-4">
-                                            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${isActive ? 'bg-purple-200 text-purple-700' : 'bg-slate-100 text-slate-400'
-                                                }`}>
-                                                <Box size={20} />
-                                            </div>
-                                            <div>
-                                                <p className={`font-bold ${isActive ? 'text-purple-900' : 'text-slate-600'}`}>{module.label}</p>
-                                                <p className="text-xs text-slate-400">{module.description || 'Módulo del sistema'}</p>
-                                            </div>
-                                        </div>
-                                        <div className={`w-12 h-6 rounded-full relative transition-colors ${isActive ? 'bg-purple-600' : 'bg-slate-200'
-                                            }`}>
-                                            <div className={`absolute top-1 w-4 h-4 rounded-full bg-white shadow-sm transition-all transform ${isActive ? 'left-7' : 'left-1'
-                                                }`} />
-                                        </div>
+
+                        <div className="p-6 max-h-[70vh] overflow-y-auto space-y-8">
+                            {/* Iterate over Categories */}
+                            {Object.entries(LEGO_CATEGORIES).map(([catKey, category]) => (
+                                <div key={catKey}>
+                                    <div className="flex items-center gap-2 mb-4">
+                                        {category.icon}
+                                        <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wide">{category.title}</h4>
                                     </div>
-                                );
-                            })}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        {category.items.map(item => {
+                                            const isActive = companyModules.has(item.key);
+                                            return (
+                                                <div key={item.key}
+                                                    onClick={() => toggleModule(item.key)}
+                                                    className={`relative flex items-start gap-3 p-4 rounded-xl border-2 transition-all cursor-pointer ${isActive
+                                                        ? 'border-purple-500 bg-purple-50'
+                                                        : 'border-slate-100 hover:border-slate-200'
+                                                        }`}>
+                                                    <div className={`mt-1 flex-shrink-0 w-5 h-5 rounded-full border flex items-center justify-center ${isActive ? 'bg-purple-600 border-purple-600' : 'border-slate-300'
+                                                        }`}>
+                                                        {isActive && <Check size={12} className="text-white" />}
+                                                    </div>
+                                                    <div>
+                                                        <p className={`font-bold ${isActive ? 'text-purple-900' : 'text-slate-700'}`}>{item.label}</p>
+                                                        <p className="text-xs text-slate-500 mt-0.5 leading-snug">{item.desc}</p>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
                         </div>
+
                         <div className="p-4 border-t border-slate-100 bg-slate-50 text-right">
                             <button onClick={() => setShowModulesModal(false)} className="px-4 py-2 bg-slate-900 text-white rounded-lg font-medium text-sm">
                                 Listo
