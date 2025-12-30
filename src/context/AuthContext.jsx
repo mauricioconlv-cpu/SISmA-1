@@ -47,12 +47,12 @@ export const AuthProvider = ({ children }) => {
         try {
             if (!supabaseUser?.id) return; // Guard clause to prevent 400 errors
 
-            // 1. Fetch Profile/User Data (REAL ARCHITECTURE)
+            // 1. Fetch Profile/User Data (REAL ARCHITECTURE) WITH JOIN
             console.log("Buscando perfil para ID:", supabaseUser.id);
 
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('*') // Bringing everything
+                .select('*, companies(*)') // Join companies to get enabled_services
                 .eq('id', supabaseUser.id)
                 .single();
 
@@ -62,7 +62,7 @@ export const AuthProvider = ({ children }) => {
 
             if (profile) {
                 console.log("✅ Perfil cargado de DB:", profile);
-                // MERGE: Combine auth user with profile data as requested
+                // MERGE: Combine auth user with profile data
                 appUser = { ...appUser, ...profile };
 
                 // Ensure helper 'rol' matches 'role' if profile overrides it
@@ -70,62 +70,60 @@ export const AuthProvider = ({ children }) => {
                     appUser.rol = profile.role;
                 }
             } else {
-                console.warn("⚠️ No se encontró perfil en DB para este usuario. Usando defaults.");
+                console.warn("⚠️ No se encontraron perfil en DB. Usando defaults.");
             }
 
-            // (Optional) Keep Superadmin override just in case of DB sync issues during dev
+            // ... (Superadmin override kept) ...
             if (supabaseUser.email === 'mauricioconlv@gmail.com') {
                 appUser.role = ROLES.SUPERADMIN;
                 appUser.rol = ROLES.SUPERADMIN;
             }
 
-            // Determine Company ID
-            // For now, logic remains similar: map specific emails to specific IDs
-            // BUT if profile had company_id, it is already in appUser due to merge!
-            if (!appUser.company_id) {
-                if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
-                    appUser.company_id = 'cliente_01';
-                } else if (supabaseUser.email === 'admin@gruas.com') {
-                    appUser.company_id = 'admin_corp';
-                } else {
-                    appUser.company_id = null;
+            // 2. CONFIGURE COMPANY (From Join or Fallback)
+            let companyData = profile?.companies; // Data from JOIN
+
+            // Fallback: If no join data (maybe no FK), but we have company_id or explicit email rule
+            if (!companyData) {
+                if (!appUser.company_id) {
+                    if (supabaseUser.email === 'gruaslafundicion@gmail.com') {
+                        appUser.company_id = 'cliente_01'; // Legacy placeholder
+                    } else if (supabaseUser.email === 'admin@gruas.com') {
+                        appUser.company_id = 'admin_corp';
+                    }
+                }
+
+                // Try manual fetch if we have an ID or it's a legacy user
+                if (appUser.company_id) {
+                    const { data: manualCompany } = await supabase
+                        .from('companies')
+                        .select('*')
+                        .or(`email.eq.${supabaseUser.email},id.eq.${appUser.company_id}`)
+                        .maybeSingle();
+                    companyData = manualCompany;
                 }
             }
 
-            // 2. FETCH COMPANY CONFIGURATION (REAL ARCHITECTURE)
-            if (appUser.company_id) {
-                // Fetch company details (optional, but good for name)
-                const { data: companyData } = await supabase
-                    .from('companies')
-                    .select('*')
-                    .or(`email.eq.${supabaseUser.email},id.eq.${appUser.company_id}`) // Try to match by ID or Email
-                    .maybeSingle(); // Use maybeSingle to avoid error if 0 or >1
+            if (companyData) {
+                appUser.nombre = appUser.full_name || appUser.nombre || companyData.name;
+                appUser.company_id = companyData.id;
 
-                let targetCompanyId = appUser.company_id;
-
-                if (companyData) {
-                    appUser.nombre = appUser.nombre || companyData.name; // Use company name if user has no name
-                    targetCompanyId = companyData.id;
-                    appUser.company_id = targetCompanyId; // Update to real UUID
-                }
-
-                // USE ENABLED_SERVICES FROM COMPANIES TABLE (The real source of truth)
+                // USE ENABLED_SERVICES FROM COMPANIES TABLE
                 const enabledModules = companyData.enabled_services || [];
 
-                // Hydrate full service objects for ServiceWizard (only vehicular/home services)
-                // Filter strings to find matching service definitions
+                // Hydrate full service objects
                 const hydratedServices = enabledModules.map(key => {
                     return SERVICE_TYPES.find(st => st.id === key);
                 }).filter(Boolean);
 
                 appUser.company = {
-                    ...(companyData || {}),
+                    ...companyData,
                     active: true,
-                    enabled_services: hydratedServices, // For Wizard (Objects)
-                    modules: enabledModules // For Sidebar (Strings: 'tow', 'finance')
+                    enabled_services: hydratedServices,
+                    modules: enabledModules
                 };
-
-                console.log("✅ Configuración de Empresa Cargada (v2):", enabledModules.length, "módulos activos:", enabledModules);
+                console.log("✅ Configuración de Empresa Cargada:", enabledModules);
+            } else {
+                appUser.company = { enabled_services: [], modules: [] };
             }
 
         } catch (error) {
