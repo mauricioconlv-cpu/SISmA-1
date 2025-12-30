@@ -652,34 +652,97 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             </div>
 
             <div className="p-8 bg-slate-50 min-h-[600px]">
-                {/* STEP 0: SELECCIÓN DE SERVICIO */}
+                {/* STEP 0: SELECCIÓN DE SERVICIO CON CATEGORÍAS */}
                 {step === 0 && (
-                    <div className="animate-fade-in">
+                    <div className="animate-fade-in space-y-8">
                         <SectionTitle title="¿Qué tipo de servicio desea registrar?" icon={<CheckCircle size={20} />} />
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                            {availableServices.length > 0 ? (
-                                availableServices.map(service => (
-                                    <button
-                                        key={service.id}
-                                        onClick={() => handleServiceSelect(service)}
-                                        className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
-                                    >
-                                        <div className="bg-blue-50 text-blue-600 p-4 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                            {getIcon(service.icon)}
+
+                        {availableServices.length > 0 ? (
+                            <>
+                                {/* CATEGORÍA: VEHICULAR */}
+                                {availableServices.some(s => s.category === 'vehicular') && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Truck size={16} /> Asistencia Vehicular
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            {availableServices.filter(s => s.category === 'vehicular').map(service => (
+                                                <button
+                                                    key={service.id}
+                                                    onClick={() => handleServiceSelect(service)}
+                                                    className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
+                                                >
+                                                    <div className="bg-blue-50 text-blue-600 p-4 rounded-full group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                                        {getIcon(service.icon)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{service.label}</h3>
+                                                        <p className="text-xs text-slate-400 uppercase mt-1">Vehicular</p>
+                                                    </div>
+                                                </button>
+                                            ))}
                                         </div>
-                                        <div>
-                                            <h3 className="font-bold text-slate-800 group-hover:text-blue-600 transition-colors">{service.label}</h3>
-                                            <p className="text-xs text-slate-400 uppercase mt-1">{service.category}</p>
+                                    </div>
+                                )}
+
+                                {/* CATEGORÍA: HOGAR */}
+                                {availableServices.some(s => s.category === 'home') && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Hammer size={16} /> Asistencia Hogar (Home)
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            {availableServices.filter(s => s.category === 'home').map(service => (
+                                                <button
+                                                    key={service.id}
+                                                    onClick={() => handleServiceSelect(service)}
+                                                    className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
+                                                >
+                                                    <div className="bg-emerald-50 text-emerald-600 p-4 rounded-full group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                                                        {getIcon(service.icon)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800 group-hover:text-emerald-600 transition-colors">{service.label}</h3>
+                                                        <p className="text-xs text-slate-400 uppercase mt-1">Hogar</p>
+                                                    </div>
+                                                </button>
+                                            ))}
                                         </div>
-                                    </button>
-                                ))
-                            ) : (
-                                <div className="col-span-4 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
-                                    <p className="text-slate-500 font-bold mb-1">No hay servicios contratados (Modo Emergencia)</p>
-                                    <p className="text-xs text-slate-400">Si ve esto, contacte a soporte técnico (Error 500).</p>
-                                </div>
-                            )}
-                        </div>
+                                    </div>
+                                )}
+
+                                {/* CATEGORÍA: MEDICAL */}
+                                {availableServices.some(s => s.category === 'medical') && (
+                                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                        <h3 className="text-sm font-bold text-slate-500 uppercase tracking-widest mb-4 flex items-center gap-2">
+                                            <Pill size={16} /> Servicios Médicos (Medical)
+                                        </h3>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                            {availableServices.filter(s => s.category === 'medical').map(service => (
+                                                <button
+                                                    key={service.id}
+                                                    onClick={() => handleServiceSelect(service)}
+                                                    className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-blue-500 hover:shadow-md transition-all flex flex-col items-center gap-4 group text-center"
+                                                >
+                                                    <div className="bg-rose-50 text-rose-600 p-4 rounded-full group-hover:bg-rose-600 group-hover:text-white transition-colors">
+                                                        {getIcon(service.icon)}
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-bold text-slate-800 group-hover:text-rose-600 transition-colors">{service.label}</h3>
+                                                        <p className="text-xs text-slate-400 uppercase mt-1">Medical</p>
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="col-span-4 text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-300">
+                                <p className="text-slate-500 font-bold mb-1">No hay servicios contratados (Modo Emergencia)</p>
+                                <p className="text-xs text-slate-400">Si ve esto, contacte a soporte técnico (Error 500).</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
