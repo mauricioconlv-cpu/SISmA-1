@@ -357,6 +357,57 @@ const PlatformCompanies = () => {
                             ))}
                         </div>
 
+                        {/* PASSWORD RESET SECTION */}
+                        <div className="p-6 bg-orange-50 border-t border-orange-100">
+                            <h4 className="font-bold text-orange-900 text-sm uppercase tracking-wide mb-3 flex items-center gap-2">
+                                <Settings size={16} /> Administración de Acceso
+                            </h4>
+                            <div className="flex gap-4 items-end">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-bold text-orange-800 mb-1">Cambiar Contraseña del Dueño</label>
+                                    <input
+                                        type="text"
+                                        placeholder="Nueva contraseña"
+                                        className="w-full px-3 py-2 bg-white border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                                        id="newOwnerPassword"
+                                    />
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const input = document.getElementById('newOwnerPassword');
+                                        const newPass = input.value;
+                                        if (!newPass) return alert("Escribe una contraseña");
+
+                                        if (!selectedCompany.email) return alert("La empresa no tiene email asignado.");
+
+                                        try {
+                                            const res = await fetch('/api/resetPassword', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ email: selectedCompany.email, password: newPass })
+                                            });
+                                            const data = await res.json();
+                                            if (res.ok) {
+                                                alert("✅ Contraseña actualizada correctamente.");
+                                                input.value = '';
+                                            } else {
+                                                alert("Error: " + data.error);
+                                            }
+                                        } catch (e) {
+                                            console.error(e);
+                                            alert("Error de conexión");
+                                        }
+                                    }}
+                                    className="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white font-bold rounded-lg text-sm shadow-sm transition-colors"
+                                >
+                                    Actualizar
+                                </button>
+                            </div>
+                            <p className="text-xs text-orange-700 mt-2">
+                                Esto cambiará inmediatamente la contraseña del usuario <strong>{selectedCompany.email}</strong>.
+                            </p>
+                        </div>
+
                         <div className="p-4 border-t border-slate-100 bg-slate-50 text-right">
                             <button onClick={() => setShowModulesModal(false)} className="px-4 py-2 bg-slate-900 text-white rounded-lg font-medium text-sm">
                                 Listo
