@@ -68,7 +68,9 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     };
 
     // LÓGICA DE PROPAGACIÓN DE DATOS (DATA DRIVEN)
-    if (user?.company?.modules) {
+    if (user?.rol === 'superadmin' || user?.role === 'superadmin') {
+        availableServices = SERVICE_TYPES;
+    } else if (user?.company?.modules) {
         // Use the raw keys from user.company.modules to determine specific services
         const allowedServiceIds = new Set();
 
