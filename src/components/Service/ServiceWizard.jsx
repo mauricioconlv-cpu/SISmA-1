@@ -664,6 +664,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                         formData={formData}
                         setFormData={setFormData}
                         clients={clients}
+                        user={user}
                         onNext={() => setStep(2)}
                         onBack={() => setStep(0)}
                         onSave={handleAssignment}

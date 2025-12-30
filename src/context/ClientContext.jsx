@@ -14,32 +14,58 @@ export const ClientProvider = ({ children }) => {
         if (!user) return;
         setLoading(true);
         try {
-            // RLS will handle the filtering by company_id automatically, but we can be explicit
+            // RLS will handle the filtering by company_id automatically
             let query = supabase.from('clients').select('*').order('name');
+            const { data: clientsData, error: clientsError } = await query;
 
-            // If superadmin, maybe we want to see all? RLS might block unless policy allows.
-            // For now, let's just fetch what RLS gives us.
-            const { data, error } = await query;
+            if (clientsError) throw clientsError;
 
-            if (error) throw error;
+            // 2. Fetch Tariffs for these clients
+            // We fetch all tariffs associated with the loaded clients to avoid N+1
+            const clientIds = clientsData.map(c => c.id);
+            let tariffMap = {}; // client_id -> { service_type: data }
 
-            // Transform/enrich if needed (e.g. rate parsing if JSON? No, rates are in tariffs table now)
-            // Wait, the UI expects 'rates' object attached to client from the previous code.
-            // The new architecture splits tariffs to 'client_tariffs' table.
-            // For this STEP (Create/List Clients), we don't need rates yet.
-            // But the UI might crash if 'rates' is missing?
-            // Let's add a dummy rates object or fetch it if needed.
-            // The user said: "Importante: Por ahora solo quiero poder CREAR y LISTAR a los clientes (las empresas). En el siguiente paso nos meteremos con sus tarifas."
-            // So I will return the client data as is.
+            if (clientIds.length > 0) {
+                const { data: tariffsData, error: tariffsError } = await supabase
+                    .from('client_tariffs')
+                    .select('*')
+                    .in('client_id', clientIds);
 
-            // Wait, existing UI (ClientManagement) heavily relies on 'rates' property.
-            // I should probably inject a safe default 'rates' object so the UI doesn't crash on null.
-            const clientsWithSafeRates = data.map(c => ({
-                ...c,
-                rates: c.rates || {} // Legacy support just in case, or empty obj
-            }));
+                if (tariffsError) {
+                    console.error("Error fetching tariffs:", tariffsError);
+                } else if (tariffsData) {
+                    // Group by client_id
+                    tariffsData.forEach(t => {
+                        if (!tariffMap[t.client_id]) tariffMap[t.client_id] = {};
+                        tariffMap[t.client_id][t.service_type] = t;
+                    });
+                }
+            }
 
-            setClients(clientsWithSafeRates);
+            // 3. Merge Tariffs into Clients
+            const clientsWithRates = clientsData.map(c => {
+                const cTariffs = tariffMap[c.id] || {};
+
+                // Legacy 'rates' support for ServiceWizard/Step2
+                // We default to 'tow' (grua) rates as the primary fallback, or the first available
+                const primaryTariff = cTariffs['tow'] || cTariffs['grua'] || Object.values(cTariffs)[0] || { base_rate: 0, km_rate: 0 };
+
+                return {
+                    ...c,
+                    tariffs: cTariffs,
+                    // Map new structure to old expected structure for Step 2
+                    rates: {
+                        ...c.rates, // keep any existing if JSON col still exists
+                        tarifaLocal: primaryTariff.base_rate,
+                        banderazo: primaryTariff.base_rate,
+                        tarifaKm: primaryTariff.km_rate,
+                        // Add specific overrides if needed
+                        horarioNocturno: 0, // Default 0 as we don't have this in simple table yet
+                    }
+                };
+            });
+
+            setClients(clientsWithRates);
 
         } catch (error) {
             console.error("Error fetching clients:", error);

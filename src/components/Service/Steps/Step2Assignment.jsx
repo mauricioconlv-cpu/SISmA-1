@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Save, Edit3, Truck, MapPin, DollarSign, ArrowLeft } from 'lucide-react';
 import { InputGroup, SectionTitle, StyledInput, StyledSelect } from '../../Shared/UIComponents';
+import { DEFAULT_TARIFAS } from '../../../utils/constants';
 
 const Step2Assignment = ({
     formData,
@@ -118,13 +119,30 @@ const Step2Assignment = ({
 
 
     // --- QUOTATION LOGIC ---
+    // --- QUOTATION LOGIC ---
     const quotation = useMemo(() => {
-        if (!formData.clientId) return { subtotal: 0, extras: 0, total: 0, breakdown: [] };
+        let rates;
 
-        const client = clients.find(c => c.id === formData.clientId);
-        if (!client || !client.rates) return { subtotal: 0, extras: 0, total: 0, breakdown: [] };
+        if (formData.clientId) {
+            const client = clients.find(c => c.id === formData.clientId);
+            if (client && client.rates) {
+                rates = client.rates;
+            }
+        }
 
-        const rates = client.rates;
+        // Fallback for 'Particular' or missing rates
+        if (!rates) {
+            rates = {
+                tarifaLocal: DEFAULT_TARIFAS.banderazo, // Using banderazo as base for local if generic
+                banderazo: DEFAULT_TARIFAS.banderazo,
+                tarifaKm: DEFAULT_TARIFAS.costoKm,
+                ...DEFAULT_TARIFAS
+            };
+        }
+
+        // If still no rates (edge case), return 0
+        if (!rates) return { subtotal: 0, extras: 0, total: 0, breakdown: [] };
+
         let subtotal = 0;
         let extras = 0;
         const breakdown = [];

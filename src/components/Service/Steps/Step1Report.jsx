@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import { supabase } from '../../../supabaseClient';
 import { User, Wrench, MapPin, Save, Truck, Edit3, ArrowLeft } from 'lucide-react';
 import { InputGroup, SectionTitle, StyledInput, StyledSelect, StyledTextArea } from '../../Shared/UIComponents';
 import MapPicker from '../../Shared/MapPicker';
@@ -14,8 +15,50 @@ const Step1Report = ({
     onSave,
     isLocked,
     onUnlock,
-    selectedService
+    selectedService,
+    user
 }) => {
+    // Local State for Clients because Global Context has race conditions
+    const [localClients, setLocalClients] = useState([{ id: 'particular', name: 'PARTICULAR' }]);
+    const [isLoadingClients, setIsLoadingClients] = useState(false);
+
+    // Fetch Clients dynamically - User Agnostic (Frontend shouldn't block, let RLS handle)
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchClients = async () => {
+            setIsLoadingClients(true);
+            try {
+                let query = supabase
+                    .from('clients')
+                    .select('id, name')
+                    .order('name', { ascending: true });
+
+                // Only apply filter if company context exists. 
+                // If SuperAdmin (no company_id), they might see all (via RLS/Policy)
+                if (user.company_id) {
+                    query = query.eq('company_id', user.company_id);
+                }
+
+                const { data, error } = await query;
+
+                if (error) throw error;
+
+                if (data) {
+                    setLocalClients([
+                        { id: 'particular', name: 'PARTICULAR' },
+                        ...data
+                    ]);
+                }
+            } catch (error) {
+                console.error("Error fetching clients in Step1:", error);
+            } finally {
+                setIsLoadingClients(false);
+            }
+        };
+
+        fetchClients();
+    }, [user]); // Depend on user object
 
     // --- HANDLERS ---
     const handleChange = (e) => {
@@ -44,14 +87,34 @@ const Step1Report = ({
     };
 
     const handleClientChange = (e) => {
-        const selectedId = parseInt(e.target.value);
-        const selectedClient = clients.find(c => c.id === selectedId);
+        const value = e.target.value;
 
-        setFormData(prev => ({
-            ...prev,
-            clientId: selectedId,
-            cliente: selectedClient ? selectedClient.name : '',
-        }));
+        // Caso: PARTICULAR
+        if (value === 'particular') {
+            setFormData(prev => ({
+                ...prev,
+                clientId: null, // Send null or handle as 0000.. in parent
+                cliente: 'Particular',
+                folioCliente: '', // Reset if needed
+            }));
+            return;
+        }
+
+        // Caso: Cliente Real
+        // Try to find by string comparison first (safe for UUIDs or Ints)
+        const selectedClient = localClients.find(c => String(c.id) === value);
+
+        if (selectedClient) {
+            setFormData(prev => ({
+                ...prev,
+                // If the original IDs are integers and we need integers, we can parse. 
+                // But Supabase often uses UUIDs. If the existing code used parseInt, it implies integers.
+                // However, 'particular' check handles our special case.
+                // We'll store the ID as it comes from DB.
+                clientId: selectedClient.id,
+                cliente: selectedClient.name,
+            }));
+        }
     };
 
     const handleLocationSelect = (type, data) => {
@@ -80,6 +143,21 @@ const Step1Report = ({
         });
     };
 
+    // Auto-select 'Particular' if it's the only option and hide the dropdown
+    const singleClientMode = localClients.length === 1 && localClients[0].id === 'particular';
+
+    useEffect(() => {
+        if (singleClientMode && formData.clientId !== null) {
+            // Force selection of Particular
+            setFormData(prev => ({
+                ...prev,
+                clientId: null,
+                cliente: 'Particular',
+                folioCliente: ''
+            }));
+        }
+    }, [singleClientMode, setFormData]);
+
     return (
         <div className="animate-fade-in space-y-8">
             <button onClick={onBack} className="flex items-center gap-2 text-slate-500 hover:text-blue-600 font-bold mb-4">
@@ -90,25 +168,25 @@ const Step1Report = ({
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
                 <SectionTitle title="Información del Reporte" icon={<User size={20} />} />
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <InputGroup label="Cliente *" required>
-                        <StyledSelect
-                            name="clientId"
-                            value={formData.clientId || ''}
-                            onChange={handleClientChange}
-                            readOnly={isLocked}
-                        >
-                            <option value="">-- Seleccione --</option>
-                            {clients && clients.length > 0 ? (
-                                clients.map(client => (
+                    {/* Hide Client Dropdown if only Particular is available */}
+                    {!singleClientMode && (
+                        <InputGroup label="Cliente *" required>
+                            <StyledSelect
+                                name="clientId"
+                                value={formData.clientId ? formData.clientId : 'particular'}
+                                onChange={handleClientChange}
+                                readOnly={isLocked}
+                                disabled={isLoadingClients}
+                            >
+                                {/* Option 'particular' is included in localClients */}
+                                {localClients.map(client => (
                                     <option key={client.id} value={client.id}>
                                         {client.name}
                                     </option>
-                                ))
-                            ) : (
-                                <option disabled>No hay clientes registrados</option>
-                            )}
-                        </StyledSelect>
-                    </InputGroup>
+                                ))}
+                            </StyledSelect>
+                        </InputGroup>
+                    )}
                     <InputGroup label="Folio Cliente" required={formData.cliente !== 'Particular'}>
                         <StyledInput name="folioCliente" value={formData.folioCliente} onChange={handleChange} readOnly={isLocked} />
                     </InputGroup>
@@ -179,7 +257,7 @@ const Step1Report = ({
             </div>
 
             {/* BLOCK 4: DESTINATION (Modularized) */}
-            {selectedService && selectedService.id === 'grua' && (
+            {selectedService && (selectedService.id === 'grua' || selectedService.id === 'tow') && (
                 <WizardDestination
                     formData={formData}
                     handleChange={handleChange}

@@ -20,45 +20,88 @@ const Dashboard = ({ user, onNavigate }) => {
     const pendingServices = services.filter(s => !s.status || s.status === 'Pendiente').length;
     // const activeServices = services.filter(s => s.status === 'Asignado' || s.status === 'En Camino').length;
 
-    // --- FETCH DYNAMIC DATA ---
+    // --- FETCH DYNAMIC DATA (POLLING STRATEGY) ---
+    const fetchDashboardData = async (companyId) => {
+        if (!companyId) return;
+
+        try {
+            console.log("� DASHBOARD: Iniciando fetch para Company ID:", companyId);
+
+            // 1. Fetch Company Goal
+            const { data: companyData } = await supabase
+                .from('companies')
+                .select('daily_revenue_goal')
+                .eq('id', companyId)
+                .single();
+
+            if (companyData) {
+                setDailyGoal(companyData.daily_revenue_goal || 50000);
+                setTempGoal(companyData.daily_revenue_goal || 50000);
+            }
+
+            // 2. Fetch Vehicles
+            const { data: vehiclesData, error: vehicleError } = await supabase
+                .from('vehicles')
+                .select('*') // Get everything to inspect
+                .eq('company_id', companyId);
+
+            if (vehicleError) throw vehicleError;
+
+            console.log('✅ DATOS ENCONTRADOS (Vehículos):', vehiclesData);
+
+            if (vehiclesData) {
+                // Javascript Filter
+                const count = vehiclesData.filter(v => v.status?.toLowerCase() === 'disponible').length;
+                console.log('📢 DASHBOARD COUNT DISPONIBLE:', count);
+                setAvailableVehicles(count);
+            }
+
+        } catch (error) {
+            console.error("📢 DASHBOARD ERROR:", error);
+        } finally {
+            setLoadingData(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchDashboardData = async () => {
-            if (!user?.company_id) return;
+        let attempts = 0;
+        const maxAttempts = 20; // 10 seconds (20 * 500ms)
+        let pollUser = null;
 
-            try {
-                // 1. Fetch Company Goal
-                const { data: companyData, error: companyError } = await supabase
-                    .from('companies')
-                    .select('daily_revenue_goal')
-                    .eq('id', user.company_id)
-                    .single();
-
-                if (companyData) {
-                    setDailyGoal(companyData.daily_revenue_goal || 50000);
-                    setTempGoal(companyData.daily_revenue_goal || 50000);
+        const checkAndFetch = () => {
+            attempts++;
+            // Check if user and company_id are ready
+            if (user && user.company_id) {
+                console.log(`✅ DASHBOARD: Usuario/Empresa encontrado en intento #${attempts}`);
+                if (pollUser) clearInterval(pollUser); // Stop polling
+                fetchDashboardData(user.company_id);
+            } else {
+                console.log(`...buscando empresa (intento ${attempts}/${maxAttempts})...`);
+                if (attempts >= maxAttempts) {
+                    console.warn("⚠️ DASHBOARD: Timeout buscando usuario. Se intentará de nuevo si cambia el contexto.");
+                    if (pollUser) clearInterval(pollUser);
                 }
-
-                // 2. Fetch Active Vehicles Count
-                // Assuming 'vehicles' table exists as per update_dashboard_data.sql
-                const { count, error: vehicleError } = await supabase
-                    .from('vehicles')
-                    .select('*', { count: 'exact', head: true })
-                    .eq('company_id', user.company_id)
-                    .eq('status', 'Disponible'); // Count only available ones
-
-                if (!vehicleError) {
-                    setAvailableVehicles(count || 0);
-                }
-
-            } catch (error) {
-                console.error("Error fetching dashboard data:", error);
-            } finally {
-                setLoadingData(false);
             }
         };
 
-        fetchDashboardData();
-    }, [user, services]); // Depend on user and services (trigger refresh if needed)
+        // Execute immediately, then poll
+        checkAndFetch();
+        pollUser = setInterval(checkAndFetch, 500);
+
+        // Also Auto-Reload on Window Focus
+        const handleFocus = () => {
+            if (user?.company_id) {
+                console.log("📢 DASHBOARD FOCUS - REFETCH DIRECTO");
+                fetchDashboardData(user.company_id);
+            }
+        };
+
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            if (pollUser) clearInterval(pollUser);
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [user]); // Re-start polling if user object reference changes
 
     const handleUpdateGoal = async () => {
         if (!user?.company_id) return;
