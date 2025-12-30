@@ -114,7 +114,7 @@ const UserManagement = () => {
         if (targetUser) {
             setUserToEdit(targetUser);
             setFormData({
-                nombre: targetUser.nombre,
+                nombre: targetUser.full_name || targetUser.nombre,
                 email: targetUser.email,
                 password: '', // Don't show existing password
                 rol: targetUser.rol,
@@ -254,7 +254,7 @@ const UserManagement = () => {
                                     <div className="bg-blue-100 text-blue-600 p-2 rounded-full">
                                         <Users size={16} />
                                     </div>
-                                    {user.nombre}
+                                    {user.full_name || user.nombre}
                                 </td>
                                 {currentUser?.rol === ROLES.SUPERADMIN && (
                                     <td className="p-4 text-slate-500 text-sm">
