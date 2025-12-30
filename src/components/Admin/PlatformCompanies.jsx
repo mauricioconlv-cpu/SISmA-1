@@ -65,54 +65,51 @@ const PlatformCompanies = () => {
     };
 
     const openModulesModal = async (company) => {
-        setSelectedCompany(company);
-        // Fetch current modules for this company
-        const { data, error } = await supabase
-            .from('company_modules')
-            .select('module_key')
-            .eq('company_id', company.id)
-            .eq('is_active', true);
+        // Refresh company data to ensure latest enabled_services
+        const { data: refreshedCompany } = await supabase
+            .from('companies')
+            .select('enabled_services') // Fetch only what we need
+            .eq('id', company.id)
+            .single();
 
-        if (data) {
-            setCompanyModules(new Set(data.map(m => m.module_key)));
-        } else {
-            setCompanyModules(new Set());
-        }
+        // Merge with passed company object or just use the services
+        const currentServices = refreshedCompany?.enabled_services || company.enabled_services || [];
+
+        setSelectedCompany({ ...company, ...refreshedCompany }); // Update selected company
+        setCompanyModules(new Set(currentServices));
         setShowModulesModal(true);
     };
 
     const toggleModule = async (moduleKey) => {
         const newSet = new Set(companyModules);
-        let action = '';
 
         if (newSet.has(moduleKey)) {
             newSet.delete(moduleKey);
-            action = 'remove';
         } else {
             newSet.add(moduleKey);
-            action = 'add';
         }
         setCompanyModules(newSet);
 
-        // Save to company_modules
-        if (action === 'add') {
-            await supabase.from('company_modules').upsert({
-                company_id: selectedCompany.id,
-                module_key: moduleKey,
-                is_active: true
-            }, { onConflict: 'company_id, module_key' });
-        } else {
-            await supabase.from('company_modules')
-                .delete()
-                .eq('company_id', selectedCompany.id)
-                .eq('module_key', moduleKey);
-        }
-
-        // SYNC enabled_services ARRAY in companies table (Connectivity Glue)
+        // SYNC enabled_services ARRAY in companies table (Source of Truth)
         const updatedArray = Array.from(newSet);
-        await supabase.from('companies').update({
-            enabled_services: updatedArray
-        }).eq('id', selectedCompany.id);
+
+        // Optimistic UI Update in the main list
+        setCompanies(companies.map(c =>
+            c.id === selectedCompany.id
+                ? { ...c, enabled_services: updatedArray }
+                : c
+        ));
+
+        // Persist to DB
+        const { error } = await supabase
+            .from('companies')
+            .update({ enabled_services: updatedArray })
+            .eq('id', selectedCompany.id);
+
+        if (error) {
+            console.error("Error updating enabled_services:", error);
+            alert("Error al guardar cambios. Revisa tu conexión.");
+        }
     };
 
     const handleCreateCompany = async (e) => {
