@@ -50,7 +50,7 @@ export default async function handler(req, res) {
                 email,
                 full_name: nombre,
                 role: rol, // Correct column is 'role'
-                company_id: company_id ? Number(company_id) : null,
+                company_id: company_id || null,
                 permissions: permissions || []
             }
         ]);
