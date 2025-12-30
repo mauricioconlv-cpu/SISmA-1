@@ -82,6 +82,13 @@ export const AuthProvider = ({ children }) => {
             // 2. CONFIGURE COMPANY (From Join or Fallback)
             let companyData = profile?.companies; // Data from JOIN
 
+            // Handle Supabase Array Response (common in Joins)
+            if (Array.isArray(companyData)) {
+                companyData = companyData[0];
+            }
+
+            console.log('Company Data Raw:', companyData);
+
             // Fallback: If no join data (maybe no FK), but we have company_id or explicit email rule
             if (!companyData) {
                 if (!appUser.company_id) {
