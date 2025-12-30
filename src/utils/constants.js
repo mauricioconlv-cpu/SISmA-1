@@ -15,6 +15,7 @@ export const SERVICE_TYPES = [
     { id: 'vidrieria', label: 'Vidriería', category: 'home', icon: 'Hammer' }, // Using Hammer as placeholder for Vidrieria if Glass not avail
 
     // GENERAL
+    { id: 'medical', label: 'Ambulancia', category: 'medical', icon: 'Pill' },
     { id: 'farmacia', label: 'Farmacia', category: 'general', icon: 'Pill' },
 ];
 

@@ -57,10 +57,34 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     // --- SERVICE FILTERING LOGIC ---
     let availableServices = [];
 
+    const MODULE_TO_SERVICES_MAP = {
+        'tow': ['tow'],
+        'roadside': ['tire', 'gas', 'jump'],
+        'medical': ['medical'],
+        'home': ['plomeria', 'electricidad', 'cerrajeria_hogar', 'vidrieria'],
+        'finance': [], // System module, not a service
+        'inventory': [], // System module
+        'hr': [] // System module
+    };
+
     // LÓGICA DE PROPAGACIÓN DE DATOS (DATA DRIVEN)
-    // El Contexto de Auth ya tiene hidratada la info de la empresa
-    if (user?.company?.enabled_services) {
-        // Obtenemos directamente del objeto user enriquecido
+    if (user?.company?.modules) {
+        // Use the raw keys from user.company.modules to determine specific services
+        const allowedServiceIds = new Set();
+
+        user.company.modules.forEach(moduleKey => {
+            const relatedServices = MODULE_TO_SERVICES_MAP[moduleKey] || [];
+            relatedServices.forEach(sId => allowedServiceIds.add(sId));
+        });
+
+        // Filter valid services from constants
+        availableServices = SERVICE_TYPES.filter(s => allowedServiceIds.has(s.id));
+
+        // Fallback: If no services match (e.g. only 'finance' module), show nothing or helpful message
+        console.log("Filtered Services:", availableServices);
+
+    } else if (user?.company?.enabled_services) {
+        // Fallback legacy check
         availableServices = user.company.enabled_services;
     } else {
         // Fallback para SuperAdmin u otros
