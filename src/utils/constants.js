@@ -14,9 +14,9 @@ export const SERVICE_TYPES = [
     { id: 'electricidad', label: 'Electricidad', category: 'home', icon: 'Zap' },
     { id: 'vidrieria', label: 'Vidriería', category: 'home', icon: 'Hammer' }, // Using Hammer as placeholder for Vidrieria if Glass not avail
 
-    // GENERAL
+    // MEDICAL
     { id: 'medical', label: 'Ambulancia', category: 'medical', icon: 'Pill' },
-    { id: 'farmacia', label: 'Farmacia', category: 'general', icon: 'Pill' },
+    { id: 'farmacia', label: 'Farmacia', category: 'medical', icon: 'Pill' },
 ];
 
 export const ROLES = {

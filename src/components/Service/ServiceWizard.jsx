@@ -60,7 +60,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     const MODULE_TO_SERVICES_MAP = {
         'tow': ['tow'],
         'roadside': ['tire', 'gas', 'jump'],
-        'medical': ['medical'],
+        'medical': ['medical', 'farmacia'],
         'home': ['plomeria', 'electricidad', 'cerrajeria_hogar', 'vidrieria'],
         'finance': [], // System module, not a service
         'inventory': [], // System module
