@@ -52,7 +52,7 @@ export const AuthProvider = ({ children }) => {
 
             const { data: profile, error: profileError } = await supabase
                 .from('profiles')
-                .select('*, companies(*)') // Join companies to get enabled_services
+                .select('*, companies(*, enabled_services)') // Join with explicit column request
                 .eq('id', supabaseUser.id)
                 .single();
 
