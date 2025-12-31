@@ -335,7 +335,6 @@ const Step2Assignment = ({
                                     <option value="arrastre_b">Grúa Tipo B (Pickups/Van)</option>
                                     <option value="arrastre_c">Grúa Tipo C (3.5 Tons)</option>
                                     <option value="arrastre_d">Grúa Tipo D (Camiones)</option>
-                                    <option value="plataforma">Grúa Plataforma</option>
                                     <option value="tow">Grúa General (Legacy)</option>
                                 </StyledSelect>
                             </div>

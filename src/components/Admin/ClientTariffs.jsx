@@ -43,13 +43,6 @@ const ClientTariffs = ({ clientId, onBack }) => {
             icon: Truck,
             category: 'Grúas'
         },
-        {
-            id: 'plataforma',
-            label: 'Grúa Plataforma',
-            module: 'tow',
-            icon: Truck,
-            category: 'Grúas'
-        },
         // Auxilio Vial (Roadside)
         {
             id: 'jump',
