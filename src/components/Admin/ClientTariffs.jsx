@@ -78,7 +78,10 @@ const ClientTariffs = ({ clientId, onBack }) => {
             ...prev,
             [serviceType]: {
                 ...prev[serviceType],
-                [field]: value
+                pricing_matrix: {
+                    ...(prev[serviceType]?.pricing_matrix || {}),
+                    [field]: value
+                }
             }
         }));
     };
@@ -87,17 +90,17 @@ const ClientTariffs = ({ clientId, onBack }) => {
         setSaving(true);
         try {
             const current = tariffs[serviceType] || {};
+            const matrix = current.pricing_matrix || {};
+
             const payload = {
                 client_id: clientId,
                 service_type: serviceType,
-                base_rate: parseFloat(current.base_rate) || 0,
-                km_rate: parseFloat(current.km_rate) || 0,
-                service_scope: 'local' // Default per spec
+                // Legacy Fallback (for existing logic that reads these columns)
+                base_rate: parseFloat(matrix.banderazo) || 0,
+                km_rate: parseFloat(matrix.km_rate) || 0,
+                service_scope: 'flexible', // New flag
+                pricing_matrix: matrix // The new powerhouse
             };
-
-            // UPSERT strategy: check if ID exists in local map to decide update vs insert?
-            // Or just use upsert with unique constraint (client_id, service_type, service_scope).
-            // But Supabase JS upsert works best if we match the columns.
 
             const { error } = await supabase
                 .from('client_tariffs')
@@ -105,9 +108,7 @@ const ClientTariffs = ({ clientId, onBack }) => {
 
             if (error) throw error;
 
-            // Re-fetch to get new IDs if inserted? Or just show success.
-            // A simple toast would be nice, but alert is fine for now.
-            alert(`Tarifa para ${serviceType} guardada.`);
+            alert(`✅ Tarifas para ${serviceType} guardadas correctamente.`);
 
         } catch (error) {
             console.error("Error saving tariff:", error);
@@ -115,6 +116,140 @@ const ClientTariffs = ({ clientId, onBack }) => {
         } finally {
             setSaving(false);
         }
+    };
+
+    if (loading) return <div className="p-8 text-center">Cargando tarifas...</div>;
+
+    // --- RENDER HELPERS ---
+    const renderPricingFields = (serviceId, matrix, handleChange) => {
+        // --- GRÚAS (A, B, C, D) ---
+        if (['tow', 'plataforma', 'arrastre_a', 'arrastre_b', 'arrastre_c', 'arrastre_d'].includes(serviceId)) {
+            return (
+                <div className="space-y-6">
+                    {/* TRASLADOS FORÁNEOS */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Traslados Foráneos</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Banderazo ($)</label>
+                                <StyledInput type="number" value={matrix.banderazo || ''} onChange={(e) => handleChange('banderazo', e.target.value)} placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Costo por KM ($)</label>
+                                <StyledInput type="number" value={matrix.km_rate || ''} onChange={(e) => handleChange('km_rate', e.target.value)} placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Casetas (Factor)</label>
+                                <StyledInput type="number" value={matrix.casetas_factor || ''} onChange={(e) => handleChange('casetas_factor', e.target.value)} placeholder="1.0" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* TRASLADOS LOCALES */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Traslados Locales</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Local Zona 1 ($)</label>
+                                <StyledInput type="number" value={matrix.local_zone1 || ''} onChange={(e) => handleChange('local_zone1', e.target.value)} placeholder="0.00" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-slate-500 mb-1">Local Zona 2 ($)</label>
+                                <StyledInput type="number" value={matrix.local_zone2 || ''} onChange={(e) => handleChange('local_zone2', e.target.value)} placeholder="0.00" />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* MANIOBRAS */}
+                    <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4 border-b border-slate-200 pb-2">Maniobras y Adicionales</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {['hora_espera', 'maniobra_base', 'adaptacion', 'resguardo_dia', 'dollys', 'patines', 'go_jacks', 'abanderamiento'].map(field => (
+                                <div key={field}>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1 capitalize">{field.replace('_', ' ')} ($)</label>
+                                    <StyledInput type="number" value={matrix[field] || ''} onChange={(e) => handleChange(field, e.target.value)} placeholder="0.00" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* BLINDAJES */}
+                    <div className="bg-orange-50 p-4 rounded-xl border border-orange-200">
+                        <h4 className="font-bold text-orange-800 text-sm uppercase tracking-wider mb-4 border-b border-orange-200 pb-2">Blindajes (Costo Extra)</h4>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {[1, 2, 3, 4, 5, 6, 7].map(lvl => (
+                                <div key={lvl}>
+                                    <label className="block text-xs font-bold text-orange-700 mb-1">Nivel {lvl} ($)</label>
+                                    <StyledInput type="number" value={matrix[`armor_lvl_${lvl}`] || ''} onChange={(e) => handleChange(`armor_lvl_${lvl}`, e.target.value)} placeholder="0.00" />
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // --- AUXILIO VIAL & GASOLINA ---
+        if (['jump', 'tire', 'gas'].includes(serviceId)) {
+            return (
+                <div className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* FORÁNEO */}
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">Foráneo</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Banderazo ($)</label>
+                                    <StyledInput type="number" value={matrix.banderazo || ''} onChange={(e) => handleChange('banderazo', e.target.value)} placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Kilómetro ($)</label>
+                                    <StyledInput type="number" value={matrix.km_rate || ''} onChange={(e) => handleChange('km_rate', e.target.value)} placeholder="0.00" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* LOCAL */}
+                        <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <h4 className="font-bold text-slate-700 text-sm uppercase tracking-wider mb-4">Local</h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Zona 1 ($)</label>
+                                    <StyledInput type="number" value={matrix.local_zone1 || ''} onChange={(e) => handleChange('local_zone1', e.target.value)} placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-500 mb-1">Zona 2 ($)</label>
+                                    <StyledInput type="number" value={matrix.local_zone2 || ''} onChange={(e) => handleChange('local_zone2', e.target.value)} placeholder="0.00" />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* GASOLINA EXTRAS */}
+                    {serviceId === 'gas' && (
+                        <div className="bg-blue-50 p-4 rounded-xl border border-blue-200">
+                            <h4 className="font-bold text-blue-800 text-sm uppercase tracking-wider mb-4">Costo Combustible (Por Litro)</h4>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-blue-700 mb-1">Magna ($)</label>
+                                    <StyledInput type="number" value={matrix.fuel_magna || ''} onChange={(e) => handleChange('fuel_magna', e.target.value)} placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-blue-700 mb-1">Premium ($)</label>
+                                    <StyledInput type="number" value={matrix.fuel_premium || ''} onChange={(e) => handleChange('fuel_premium', e.target.value)} placeholder="0.00" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-blue-700 mb-1">Diesel ($)</label>
+                                    <StyledInput type="number" value={matrix.fuel_diesel || ''} onChange={(e) => handleChange('fuel_diesel', e.target.value)} placeholder="0.00" />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        return <div className="text-slate-400 italic p-4">Configuración genérica para este servicio.</div>;
     };
 
     if (loading) return <div className="p-8 text-center">Cargando tarifas...</div>;
@@ -132,85 +267,55 @@ const ClientTariffs = ({ clientId, onBack }) => {
                 </div>
             </div>
 
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="p-6 bg-slate-50 border-b border-slate-200">
-                    <SectionTitle title="Matriz de Precios por Servicio" icon={<DollarSign size={20} />} />
-                    <p className="text-sm text-slate-500 mt-2">Defina el costo base (banderazo) y el costo por kilómetro para cada tipo de servicio.</p>
-                </div>
+            <div className="space-y-4">
+                {(SERVICE_TYPES || [])
+                    .filter(s => allowedServices.includes(s.id))
+                    .map((service) => {
+                        // Get current matrix or initialize empty
+                        const currentMatrix = tariffs[service.id]?.pricing_matrix || {};
 
-                <div className="p-6">
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left border-collapse">
-                            <thead>
-                                <tr className="border-b border-slate-100 text-xs uppercase text-slate-500">
-                                    <th className="py-4 px-4 font-bold">Servicio</th>
-                                    <th className="py-4 px-4 font-bold text-center w-40">Costo Base ($)</th>
-                                    <th className="py-4 px-4 font-bold text-center w-40">Costo KM ($)</th>
-                                    <th className="py-4 px-4 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                                {(SERVICE_TYPES || [])
-                                    .filter(s => allowedServices.includes(s.id))
-                                    .map((service) => {
-                                        const rate = tariffs[service.id] || { base_rate: '', km_rate: '' };
-                                        return (
-                                            <tr key={service.id} className="hover:bg-slate-50 transition-colors">
-                                                <td className="py-4 px-4">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
-                                                            <Truck size={20} />
-                                                            {/* Ideally use service.icon dynamic mapping but Truck works for generic */}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-slate-800">{service.label}</p>
-                                                            <p className="text-xs text-slate-400 capitalize">{service.category}</p>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 px-4">
-                                                    <StyledInput
-                                                        type="number"
-                                                        placeholder="0.00"
-                                                        value={rate.base_rate}
-                                                        onChange={(e) => handleRateChange(service.id, 'base_rate', e.target.value)}
-                                                        className="text-center font-mono text-sm"
-                                                    />
-                                                </td>
-                                                <td className="py-4 px-4">
-                                                    <StyledInput
-                                                        type="number"
-                                                        placeholder="0.00"
-                                                        value={rate.km_rate}
-                                                        onChange={(e) => handleRateChange(service.id, 'km_rate', e.target.value)}
-                                                        className="text-center font-mono text-sm"
-                                                    />
-                                                </td>
-                                                <td className="py-4 px-4 text-right">
-                                                    <button
-                                                        onClick={() => saveTariff(service.id)}
-                                                        disabled={saving}
-                                                        className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-all shadow-sm active:scale-95 disabled:opacity-50"
-                                                    >
-                                                        <Save size={14} /> Guardar
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                        return (
+                            <details key={service.id} className="group bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden open:ring-2 open:ring-blue-500/20 transition-all">
+                                <summary className="flex items-center justify-between p-6 cursor-pointer list-none hover:bg-slate-50 transition-colors">
+                                    <div className="flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center font-bold shadow-sm group-open:bg-blue-600 group-open:text-white transition-all">
+                                            <Truck size={24} />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-lg font-bold text-slate-800 group-open:text-blue-700">{service.label}</h3>
+                                            <p className="text-xs text-slate-400 capitalize">{service.category}</p>
+                                        </div>
+                                    </div>
+                                    <span className="text-slate-400 transform group-open:rotate-180 transition-transform">▼</span>
+                                </summary>
+
+                                <div className="p-6 border-t border-slate-100 bg-white animate-fade-in">
+                                    {renderPricingFields(
+                                        service.id,
+                                        currentMatrix,
+                                        (field, value) => handleRateChange(service.id, field, value)
+                                    )}
+
+                                    <div className="mt-8 flex justify-end pt-6 border-t border-slate-100">
+                                        <button
+                                            onClick={() => saveTariff(service.id)}
+                                            disabled={saving}
+                                            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-xl font-bold hover:bg-blue-700 transition-all shadow-lg hover:shadow-blue-500/30 active:scale-95 disabled:opacity-50"
+                                        >
+                                            <Save size={18} /> Guardar Tarifas de {service.label}
+                                        </button>
+                                    </div>
+                                </div>
+                            </details>
+                        );
+                    })}
             </div>
 
-            <div className="mt-6 flex items-start gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100 text-sm text-blue-800">
-                <AlertCircle size={18} className="mt-0.5 flex-shrink-0" />
-                <p>
-                    <strong>Nota:</strong> Los precios se guardan individualmente. Asegúrese de guardar cada fila tras modificarla.
-                    El sistema usará el "Costo Base" como banderazo y sumará (KM * Costo KM) para servicios foráneos.
-                </p>
-            </div>
+            {allowedServices.length === 0 && (
+                <div className="p-12 text-center bg-slate-100 rounded-xl border border-dashed border-slate-300">
+                    <p className="text-slate-500">Este cliente no tiene servicios activos para configurar.</p>
+                </div>
+            )}
         </div>
     );
 };
