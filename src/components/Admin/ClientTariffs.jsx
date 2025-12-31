@@ -68,8 +68,12 @@ const ClientTariffs = ({ clientId, onBack }) => {
     ];
 
     useEffect(() => {
-        if (user?.company_id && clientId) {
+        // Fix: Allow fetch if user exists (even if no company_id for SuperAdmin or edge cases)
+        // Only block if no user is logged in
+        if (user && clientId) {
             fetchData();
+        } else {
+            setLoading(false); // Ensure we stop loading if requirements aren't met
         }
     }, [clientId, user]);
 
@@ -77,13 +81,19 @@ const ClientTariffs = ({ clientId, onBack }) => {
         setLoading(true);
         try {
             // 1. Fetch Company Config
-            const { data: companyData } = await supabase
-                .from('companies')
-                .select('enabled_services')
-                .eq('id', user.company_id)
-                .single();
+            let companyModules = [];
 
-            const companyModules = companyData?.enabled_services || [];
+            if (user.company_id) {
+                const { data: companyData } = await supabase
+                    .from('companies')
+                    .select('enabled_services')
+                    .eq('id', user.company_id)
+                    .single();
+                companyModules = companyData?.enabled_services || [];
+            } else if (['superadmin', 'super_admin', 'owner'].includes(user.rol || user.role)) {
+                // SUPER ADMIN FALLBACK: Enable ALL services if no company_id (God Mode / Direct Owner)
+                companyModules = ['tow', 'roadside', 'medical', 'home'];
+            }
 
             // Map legacy 'grua', 'corriente' to new module keys if necessary, or rely on 'tow'/'roadside'
             // For simplicity, if company has 'tow', we show all tow types.
