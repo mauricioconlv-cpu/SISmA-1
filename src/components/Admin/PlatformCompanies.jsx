@@ -13,15 +13,28 @@ const PlatformCompanies = () => {
     const [companyModules, setCompanyModules] = useState(new Set());
 
     // --- LEGO CONFIGURATION DEFINITION ---
+    // --- LEGO CONFIGURATION DEFINITION ---
     const LEGO_CATEGORIES = {
-        verticals: {
-            title: "Verticales (Servicios)",
+        vehicular: {
+            title: "Asistencia Vehicular",
             icon: <Truck size={18} className="text-blue-500" />,
             items: [
                 { key: 'tow', label: 'Grúas', desc: 'Gestión de servicios de grúa y arrastre.' },
-                { key: 'medical', label: 'Ambulancias', desc: 'Despacho y control de unidades médicas.' },
-                { key: 'home', label: 'Hogar / Plomería', desc: 'Servicios de asistencia en el hogar.' },
                 { key: 'roadside', label: 'Vialidad', desc: 'Gasolina, cambio de llanta, paso de corriente.' }
+            ]
+        },
+        home: {
+            title: "Asistencia Hogar",
+            icon: <Box size={18} className="text-emerald-500" />, // Using Box as placeholder or Hammer if imported
+            items: [
+                { key: 'home', label: 'Hogar / Plomería', desc: 'Servicios de asistencia en el hogar.' }
+            ]
+        },
+        medical: {
+            title: "Servicios Médicos",
+            icon: <Box size={18} className="text-rose-500" />,
+            items: [
+                { key: 'medical', label: 'Ambulancias', desc: 'Despacho y control de unidades médicas.' }
             ]
         },
         modules: {
