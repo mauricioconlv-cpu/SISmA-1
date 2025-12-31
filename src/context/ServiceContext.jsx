@@ -131,7 +131,8 @@ export const ServiceProvider = ({ children }) => {
             const serviceToInsert = {
                 // Columnas Fijas que SÍ existen en Supabase
                 folio: newService.folio || getNextFolio(),
-                client_id: validClientId, // Usamos la variable que ya validaste arriba
+                client_id: validClientId,
+                company_id: user.company_id, // ENFORCE DATA OWNERSHIP
                 status: 'Activo',
 
                 // Columnas JSONB (Aquí adentro va todo lo demás)

@@ -15,7 +15,11 @@ export const ClientProvider = ({ children }) => {
         setLoading(true);
         try {
             // RLS will handle the filtering by company_id automatically
-            let query = supabase.from('clients').select('*').order('name');
+            // FORCE FILTER BY COMPANY_ID (Explicit Multi-tenancy)
+            let query = supabase.from('clients')
+                .select('*')
+                .eq('company_id', user.company_id)
+                .order('name');
             const { data: clientsData, error: clientsError } = await query;
 
             if (clientsError) throw clientsError;
