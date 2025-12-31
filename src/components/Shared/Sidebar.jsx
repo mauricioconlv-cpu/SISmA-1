@@ -13,9 +13,7 @@ const MODULE_MENU_MAP = {
     ],
 
     // Modules
-    'finance': [
-        { id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign }
-    ],
+    'finance': [], // Finanzas (Now empty, Clients moved to Core)
     'inventory': [
         { id: 'inventory', label: 'Inventario', Icon: Package }
     ]
@@ -23,22 +21,12 @@ const MODULE_MENU_MAP = {
 
 const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // --- MODULE PERMISSIONS (LEGO) ---
-    // Get array of active module objects [{id: 'tow'}, ...] or string keys?
-    // AuthContext structure: 
-    // user.company.modules = ['tow', 'finance', 'inventory'] (Raw keys)
-    // user.company.enabled_services = [{id: 'tow', ...}] (Hydrated services only)
-
-    // We prefer specific 'modules' array, fallback to enabled_services for legacy safety
     const rawModules = user?.company?.modules || (user?.company?.enabled_services || []).map(m => m.id);
     const activeModuleKeys = new Set(rawModules);
 
-    // Helper: Superadmin sees everything, or specific things? 
-    // User said: "Si user.role === 'superadmin': ... Muestra un menú nuevo ... OCULTA el menú de 'Administración' normal"
-    // But later said "IMPORTANTE: Si el usuario es superadmin, ignora esto y muéstrale todo (o su panel de gestión)."
-    // I will stick to: Superadmin gets Platform Panel. Owner gets LEGO menu.
-
-    const isOwner = user?.role === 'owner';
-    const isSuperAdmin = user?.role === 'superadmin';
+    const isOwner = user?.role === 'owner' || user?.rol === 'owner';
+    const isSuperAdmin = user?.role === 'superadmin' || user?.rol === 'superadmin';
+    const isAdmin = user?.role === 'admin' || user?.rol === 'admin';
 
     // --- BUILD DYNAMIC MENU ---
     const menuItems = [];
@@ -46,7 +34,12 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // 1. Dashboard (Always Visible)
     menuItems.push({ id: 'dashboard', label: 'Inicio', Icon: Home });
 
-    // 2. Dynamic Modules (LEGO) - Owners see active modules, SuperAdmins see EVERYTHING for Demos
+    // 2. Core Management (Visible for Owners/Admins/SuperAdmins) - NO MODULE REQUIRED
+    if (isOwner || isAdmin || isSuperAdmin) {
+        menuItems.push({ id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign });
+    }
+
+    // 3. Dynamic Modules (LEGO) - Owners see active modules, SuperAdmins see EVERYTHING for Demos
     if (isOwner || isSuperAdmin) {
         // We iterate through the defined MAP to preserve order
         Object.keys(MODULE_MENU_MAP).forEach(key => {
@@ -54,7 +47,8 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
             if (isSuperAdmin || activeModuleKeys.has(key)) {
                 const items = MODULE_MENU_MAP[key];
                 if (Array.isArray(items)) {
-                    menuItems.push(...items);
+                    // Filter out empty arrays if any
+                    if (items.length > 0) menuItems.push(...items);
                 } else {
                     menuItems.push(items);
                 }
