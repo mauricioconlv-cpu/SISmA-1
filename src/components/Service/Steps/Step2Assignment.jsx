@@ -121,27 +121,32 @@ const Step2Assignment = ({
     // --- QUOTATION LOGIC ---
     // --- QUOTATION LOGIC ---
     const quotation = useMemo(() => {
-        let rates;
+        let matrix = {};
+        const client = formData.clientId ? clients.find(c => c.id === formData.clientId) : null;
 
-        if (formData.clientId) {
-            const client = clients.find(c => c.id === formData.clientId);
-            if (client && client.rates) {
-                rates = client.rates;
-            }
-        }
+        // 1. Try to find specific tariff for this service type
+        // serviceType comes from formData (which gets it from selectedService.id)
+        const sType = formData.serviceType || 'tow';
 
-        // Fallback for 'Particular' or missing rates
-        if (!rates) {
-            rates = {
-                tarifaLocal: DEFAULT_TARIFAS.banderazo, // Using banderazo as base for local if generic
+        if (client && client.tariffs && client.tariffs[sType]) {
+            matrix = client.tariffs[sType].pricing_matrix || {};
+        } else if (client && client.rates) {
+            // Legacy Fallback
+            matrix = {
+                banderazo: client.rates.banderazo,
+                km_rate: client.rates.tarifaKm,
+                local_zone1: client.rates.tarifaLocal,
+                // Map legacy extras if they match keys
+                horario_nocturno: client.rates.horarioNocturno
+            };
+        } else {
+            // Default Fallback
+            matrix = {
                 banderazo: DEFAULT_TARIFAS.banderazo,
-                tarifaKm: DEFAULT_TARIFAS.costoKm,
-                ...DEFAULT_TARIFAS
+                km_rate: DEFAULT_TARIFAS.costoKm,
+                local_zone1: DEFAULT_TARIFAS.banderazo
             };
         }
-
-        // If still no rates (edge case), return 0
-        if (!rates) return { subtotal: 0, extras: 0, total: 0, breakdown: [] };
 
         let subtotal = 0;
         let extras = 0;
@@ -149,39 +154,65 @@ const Step2Assignment = ({
 
         // 1. Base Cost
         if (formData.tipoServicio === 'Local') {
-            subtotal = rates.tarifaLocal || 0;
-            breakdown.push({ concept: 'Servicio Local', amount: subtotal });
+            // Default to Zone 1 for now, or use logic to determine zone
+            subtotal = parseFloat(matrix.local_zone1) || 0;
+            breakdown.push({ concept: 'Servicio Local (Zona 1)', amount: subtotal });
         } else {
             // Foráneo
             const distanceKm = parseFloat(formData.billableDistance) || 0;
+            const banderazo = parseFloat(matrix.banderazo) || 0;
+            const kmRate = parseFloat(matrix.km_rate) || 0;
 
-            const banderazo = rates.banderazo || 0;
-            const kmCost = distanceKm * (rates.tarifaKm || 0);
+            const kmCost = distanceKm * kmRate;
             subtotal = banderazo + kmCost;
 
-            breakdown.push({ concept: 'Banderazo', amount: banderazo });
-            breakdown.push({ concept: `Kilometraje (${distanceKm} km)`, amount: kmCost });
+            breakdown.push({ concept: 'Banderazo Foráneo', amount: banderazo });
+            breakdown.push({ concept: `Kilometraje (${distanceKm} km x $${kmRate})`, amount: kmCost });
         }
 
-        // 2. Extras
-        Object.keys(extrasQuantities).forEach(key => {
-            const qty = extrasQuantities[key];
-            const rate = rates[key] || 0;
+        // 2. Extras (Iterate over our local quantities state)
+        // Keys in extrasQuantities match keys in pricing_matrix (mostly)
+        // We map them explicitly to ensure safety
+        const EXTRA_KEYS = [
+            'maniobra_base', 'hora_espera', 'paso_corriente', 'cambio_llanta',
+            'suministro_gasolina', 'resguardo_dia', 'adaptacion', 'carga_kg',
+            'acondicionamiento', 'rescate', 'nivel_subterraneo', 'dollys', 'patines', 'go_jacks', 'abanderamiento'
+        ];
 
-            if (key === 'horarioNocturno') {
-                if (qty) { // qty is boolean here
-                    const surcharge = subtotal * (rate / 100);
-                    extras += surcharge;
-                    breakdown.push({ concept: `Horario Nocturno (+${rate}%)`, amount: surcharge });
-                }
-            } else {
-                if (qty > 0 && rate > 0) {
-                    const cost = qty * rate;
-                    extras += cost;
-                    breakdown.push({ concept: `${key} (x${qty})`, amount: cost });
-                }
+        // Normal Extras
+        EXTRA_KEYS.forEach(key => {
+            // Handle camelCase vs snake_case mapping if needed (state uses camelCase or specific mix)
+            // step2 state: 'maniobraBase' (camel) vs matrix 'maniobra_base' (snake)
+            // Let's normalize lookup
+            const stateKey = key.replace(/_([a-z])/g, (g) => g[1].toUpperCase()); // snack_case to camelCase
+            const qty = extrasQuantities[stateKey] || 0;
+            const unitPrice = parseFloat(matrix[key] || matrix[stateKey]) || 0;
+
+            if (qty > 0 && unitPrice > 0) {
+                const cost = qty * unitPrice;
+                extras += cost;
+                breakdown.push({ concept: `${key.replace(/_/g, ' ')} (x${qty})`, amount: cost });
             }
         });
+
+        // Special: Horario Nocturno (Percent)
+        if (extrasQuantities.horarioNocturno) { // user toggle
+            // Matrix might store it as 'horario_nocturno' or 'horarioNocturno'
+            // And value might be percentage (e.g. 50 for 50%)
+            const pct = parseFloat(matrix.horario_nocturno || matrix.horarioNocturno) || 0;
+            if (pct > 0) {
+                const surcharge = subtotal * (pct / 100);
+                extras += surcharge;
+                breakdown.push({ concept: `Horario Nocturno (+${pct}%)`, amount: surcharge });
+            }
+        }
+
+        // Armor (Blindajes) logic? (Not in Step 2 inputs yet, but ready for future)
+
+        // Fuel Cost (Litros) if applicable
+        if (sType === 'gas') {
+            // Assuming we might add inputs for fuel liters later
+        }
 
         return {
             subtotal,
@@ -189,7 +220,7 @@ const Step2Assignment = ({
             total: subtotal + extras,
             breakdown
         };
-    }, [formData.clientId, formData.tipoServicio, formData.billableDistance, extrasQuantities, clients]);
+    }, [formData.clientId, formData.tipoServicio, formData.serviceType, formData.billableDistance, extrasQuantities, clients]);
 
     // Update formData with quotation when it changes
     useEffect(() => {
@@ -235,6 +266,19 @@ const Step2Assignment = ({
             details: `Unidad ${formData.grua} asignada a ${formData.operador}. ETA: ${eta.toLocaleTimeString()}`
         });
     };
+
+    // --- DATA PREPARATION FOR RENDER ---
+    const activeMatrix = useMemo(() => {
+        if (!formData.clientId) return {};
+        const client = clients.find(c => c.id === formData.clientId);
+        const sType = formData.serviceType || 'tow';
+
+        if (client && client.tariffs && client.tariffs[sType]) {
+            return client.tariffs[sType].pricing_matrix || {};
+        }
+        // Legacy/Default Fallback
+        return client?.rates || DEFAULT_TARIFAS;
+    }, [formData.clientId, formData.serviceType, clients]);
 
     return (
         <div className="animate-fade-in space-y-8">
@@ -383,18 +427,18 @@ const Step2Assignment = ({
                         {/* BASE COST SECTION */}
                         <div className="mb-6 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
                             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 border-b border-slate-100 pb-1">Costo Base</h4>
-                            {formData.clientId && clients.find(c => c.id === formData.clientId)?.rates && (
+                            {formData.clientId && (
                                 <>
                                     {formData.tipoServicio === 'Local' ? (
                                         <div className="flex justify-between items-center">
-                                            <span className="text-sm font-bold text-slate-700">Tarifa Local Pactada</span>
-                                            <span className="font-bold text-slate-800">${clients.find(c => c.id === formData.clientId).rates.tarifaLocal}</span>
+                                            <span className="text-sm font-bold text-slate-700">Tarifa Local (Zona 1)</span>
+                                            <span className="font-bold text-slate-800">${parseFloat(activeMatrix.local_zone1 || activeMatrix.tarifaLocal || 0).toFixed(2)}</span>
                                         </div>
                                     ) : (
                                         <div className="space-y-3">
                                             <div className="flex justify-between items-center">
                                                 <span className="text-sm text-slate-600">Banderazo de Salida</span>
-                                                <span className="font-bold text-slate-800">${clients.find(c => c.id === formData.clientId).rates.banderazo}</span>
+                                                <span className="font-bold text-slate-800">${parseFloat(activeMatrix.banderazo || 0).toFixed(2)}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <div className="flex-1">
@@ -412,14 +456,14 @@ const Step2Assignment = ({
                                                 <div className="flex-1">
                                                     <label className="block text-xs font-bold text-slate-500 mb-1">Precio x Km</label>
                                                     <div className="w-full p-2 bg-slate-100 border border-slate-200 rounded text-right font-bold text-slate-600">
-                                                        ${clients.find(c => c.id === formData.clientId).rates.tarifaKm}
+                                                        ${parseFloat(activeMatrix.km_rate || activeMatrix.tarifaKm || 0).toFixed(2)}
                                                     </div>
                                                 </div>
                                                 <div className="pt-5 text-slate-400">=</div>
                                                 <div className="flex-1">
                                                     <label className="block text-xs font-bold text-slate-500 mb-1">Subtotal Kms</label>
                                                     <div className="w-full p-2 bg-slate-100 border border-slate-200 rounded text-right font-bold text-blue-600">
-                                                        ${(parseFloat(formData.billableDistance || 0) * clients.find(c => c.id === formData.clientId).rates.tarifaKm).toFixed(2)}
+                                                        ${(parseFloat(formData.billableDistance || 0) * parseFloat(activeMatrix.km_rate || activeMatrix.tarifaKm || 0)).toFixed(2)}
                                                     </div>
                                                 </div>
                                             </div>
@@ -433,50 +477,62 @@ const Step2Assignment = ({
                         <div className="mb-6">
                             <h4 className="text-xs font-bold text-slate-400 uppercase mb-3 border-b border-slate-100 pb-1">Cargos Adicionales</h4>
                             <div className="grid grid-cols-1 gap-3">
-                                {formData.clientId && clients.find(c => c.id === formData.clientId)?.rates && (
+                                {formData.clientId && (
                                     <>
-                                        {Object.entries(clients.find(c => c.id === formData.clientId).rates).map(([key, rate]) => {
-                                            if (['tarifaLocal', 'tarifaKm', 'banderazo'].includes(key)) return null;
-                                            if (rate <= 0) return null;
+                                        {/* HORARIO NOCTURNO */}
+                                        {(activeMatrix.horario_nocturno > 0 || activeMatrix.horarioNocturno > 0) && (
+                                            <label className="flex items-center justify-between bg-white p-3 rounded border border-slate-200 cursor-pointer hover:bg-slate-50">
+                                                <div className="flex items-center gap-3">
+                                                    <input
+                                                        type="checkbox"
+                                                        checked={extrasQuantities.horarioNocturno}
+                                                        onChange={e => handleExtrasChange('horarioNocturno', e.target.checked)}
+                                                        disabled={isAssignmentLocked}
+                                                        className="w-5 h-5 text-blue-600 rounded"
+                                                    />
+                                                    <span className="text-sm font-bold text-slate-700">Horario Nocturno (+{activeMatrix.horario_nocturno || activeMatrix.horarioNocturno}%)</span>
+                                                </div>
+                                                <span className="font-bold text-blue-600">
+                                                    {extrasQuantities.horarioNocturno ? `+${(activeMatrix.horario_nocturno || activeMatrix.horarioNocturno)}%` : '$0.00'}
+                                                </span>
+                                            </label>
+                                        )}
 
-                                            if (key === 'horarioNocturno') {
-                                                return (
-                                                    <label key={key} className="flex items-center justify-between bg-white p-3 rounded border border-slate-200 cursor-pointer hover:bg-slate-50">
-                                                        <div className="flex items-center gap-3">
-                                                            <input
-                                                                type="checkbox"
-                                                                checked={extrasQuantities.horarioNocturno}
-                                                                onChange={e => handleExtrasChange(key, e.target.checked)}
-                                                                disabled={isAssignmentLocked}
-                                                                className="w-5 h-5 text-blue-600 rounded"
-                                                            />
-                                                            <span className="text-sm font-bold text-slate-700">Horario Nocturno (+{rate}%)</span>
-                                                        </div>
-                                                        <span className="font-bold text-blue-600">
-                                                            {extrasQuantities.horarioNocturno ? `+$${(quotation.subtotal * (rate / 100)).toFixed(2)}` : '$0.00'}
-                                                        </span>
-                                                    </label>
-                                                );
-                                            }
+                                        {/* DYNAMIC EXTRAS LIST */}
+                                        {[
+                                            { key: 'maniobra_base', label: 'Maniobra de Salvamento', stateKey: 'maniobraBase' },
+                                            { key: 'hora_espera', label: 'Hora de Espera', stateKey: 'esperaHora' },
+                                            { key: 'paso_corriente', label: 'Paso de Corriente', stateKey: 'pasoCorriente' },
+                                            { key: 'cambio_llanta', label: 'Cambio de Llanta', stateKey: 'cambioLlanta' },
+                                            { key: 'suministro_gasolina', label: 'Suministro Gasolina', stateKey: 'suministroGasolina' },
+                                            { key: 'resguardo_dia', label: 'Resguardo (Día)', stateKey: 'resguardoDia' },
+                                            { key: 'dollys', label: 'Uso de Dollys', stateKey: 'dollys' },
+                                            { key: 'patines', label: 'Uso de Patines', stateKey: 'patines' },
+                                            { key: 'go_jacks', label: 'Uso de Go-Jacks', stateKey: 'goJacks' },
+                                            { key: 'abanderamiento', label: 'Abanderamiento', stateKey: 'abanderamiento' },
+                                            { key: 'nivel_subterraneo', label: 'Nivel Subterráneo', stateKey: 'nivelSubterraneo' }
+                                        ].map(extra => {
+                                            const price = parseFloat(activeMatrix[extra.key] || activeMatrix[extra.stateKey]) || 0;
+                                            if (price <= 0) return null; // Don't show if not priced
 
                                             return (
-                                                <div key={key} className="flex items-center justify-between bg-white p-2 rounded border border-slate-200">
-                                                    <span className="text-sm text-slate-600 flex-1">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
+                                                <div key={extra.key} className="flex items-center justify-between bg-white p-2 rounded border border-slate-200">
+                                                    <span className="text-sm text-slate-600 flex-1">{extra.label}</span>
                                                     <div className="flex items-center gap-2">
                                                         <div className="flex items-center bg-slate-50 rounded border border-slate-300 overflow-hidden">
                                                             <input
                                                                 type="number"
                                                                 min="0"
-                                                                value={extrasQuantities[key]}
-                                                                onChange={e => handleExtrasChange(key, parseInt(e.target.value) || 0)}
+                                                                value={extrasQuantities[extra.stateKey]}
+                                                                onChange={e => handleExtrasChange(extra.stateKey, parseInt(e.target.value) || 0)}
                                                                 disabled={isAssignmentLocked}
                                                                 className="w-16 p-1 text-center font-bold outline-none bg-transparent"
-                                                                placeholder="Qty"
+                                                                placeholder="0"
                                                             />
                                                         </div>
-                                                        <span className="text-xs text-slate-400">x ${rate}</span>
+                                                        <span className="text-xs text-slate-400">x ${price}</span>
                                                         <span className="w-20 text-right font-bold text-slate-800">
-                                                            ${(extrasQuantities[key] * rate).toFixed(2)}
+                                                            ${(extrasQuantities[extra.stateKey] * price).toFixed(2)}
                                                         </span>
                                                     </div>
                                                 </div>
