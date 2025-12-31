@@ -126,11 +126,12 @@ const Step2Assignment = ({
 
         // 1. Try to find specific tariff for this service type
         // serviceType comes from formData (which gets it from selectedService.id)
-        const sType = formData.serviceType || 'tow';
+        // PRIORITY: Check if user selected a specific tariff type (e.g. 'arrastre_a')
+        const sType = formData.tariffType || formData.serviceType || 'tow';
 
         if (client && client.tariffs && client.tariffs[sType]) {
             matrix = client.tariffs[sType].pricing_matrix || {};
-        } else if (client && client.rates) {
+        } else if (client && client.rates && !formData.tariffType) { // Fallback only if no specific tariff selected
             // Legacy Fallback
             matrix = {
                 banderazo: client.rates.banderazo,
@@ -271,14 +272,15 @@ const Step2Assignment = ({
     const activeMatrix = useMemo(() => {
         if (!formData.clientId) return {};
         const client = clients.find(c => c.id === formData.clientId);
-        const sType = formData.serviceType || 'tow';
+        // Priority to specific tariff type
+        const sType = formData.tariffType || formData.serviceType || 'tow';
 
         if (client && client.tariffs && client.tariffs[sType]) {
             return client.tariffs[sType].pricing_matrix || {};
         }
         // Legacy/Default Fallback
         return client?.rates || DEFAULT_TARIFAS;
-    }, [formData.clientId, formData.serviceType, clients]);
+    }, [formData.clientId, formData.serviceType, formData.tariffType, clients]);
 
     return (
         <div className="animate-fade-in space-y-8">
@@ -314,6 +316,31 @@ const Step2Assignment = ({
                                 )}
                             </StyledSelect>
                         </InputGroup>
+
+                        {/* TARIFF TYPE SELECTOR (Only if service supports subtypes like 'tow') */}
+                        {(formData.serviceType === 'tow' || !formData.serviceType) && (
+                            <div className={`p-4 rounded-xl border-2 ${isAssignmentLocked ? 'border-slate-100 bg-slate-50' : 'border-indigo-100 bg-indigo-50'}`}>
+                                <h4 className="text-xs font-bold text-indigo-800 uppercase mb-2 flex items-center gap-2">
+                                    <DollarSign size={14} /> Selecciona Tarifa Aplicable
+                                </h4>
+                                <StyledSelect
+                                    name="tariffType"
+                                    value={formData.tariffType || ''}
+                                    onChange={handleChange}
+                                    readOnly={isAssignmentLocked}
+                                    className="bg-white border-indigo-200 focus:border-indigo-500 text-indigo-900 font-bold"
+                                >
+                                    <option value="">-- Usar Tarifa Genérica --</option>
+                                    <option value="arrastre_a">Grúa Tipo A (Compactos)</option>
+                                    <option value="arrastre_b">Grúa Tipo B (Pickups/Van)</option>
+                                    <option value="arrastre_c">Grúa Tipo C (3.5 Tons)</option>
+                                    <option value="arrastre_d">Grúa Tipo D (Camiones)</option>
+                                    <option value="plataforma">Grúa Plataforma</option>
+                                    <option value="tow">Grúa General (Legacy)</option>
+                                </StyledSelect>
+                            </div>
+                        )}
+
 
                         {/* Tipo de Servicio Selector */}
                         <InputGroup label="Tipo de Servicio">
