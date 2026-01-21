@@ -35,11 +35,12 @@ const LoginScreen = () => {
             <div className="relative z-10 w-full max-w-md">
 
                 {/* Branding Section - Centered above form */}
-                <div className="text-center mb-8">
-                    <h1 className="text-7xl font-bold text-white tracking-widest leading-none drop-shadow-2xl">
+                {/* Branding Section - Centered above form */}
+                <div className="text-center mb-10 mt-8">
+                    <h1 className="text-7xl font-bold text-white tracking-widest leading-none drop-shadow-2xl font-['Space_Grotesk']">
                         PROTEO
                     </h1>
-                    <h2 className="text-3xl font-light text-blue-100 tracking-wider mt-2 shadow-black drop-shadow-md">
+                    <h2 className="text-2xl font-normal text-slate-200 tracking-wider mt-3 drop-shadow-md">
                         Ecosistema Operativo inteligente
                     </h2>
                 </div>
