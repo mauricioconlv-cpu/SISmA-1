@@ -45,13 +45,13 @@ const LoginScreen = () => {
                     </h2>
                 </div>
 
-                {/* Glassmorphic Card */}
-                <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
-                    <form onSubmit={handleLogin} className="space-y-6">
-                        <InputGroup label={<span className="text-blue-100">Correo Electrónico</span>}>
+                {/* Floating White Card */}
+                <div className="bg-white rounded-3xl shadow-2xl p-10 border border-slate-100 relative overflow-hidden">
+                    <form onSubmit={handleLogin} className="space-y-8 relative z-10">
+                        <InputGroup label={<span className="text-slate-600 font-bold uppercase tracking-wider text-xs">Correo Electrónico</span>}>
                             <input
                                 type="email"
-                                className="w-full bg-slate-900/50 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all outline-none text-white placeholder-slate-400"
+                                className="w-full bg-transparent border-b-2 border-slate-200 px-0 py-3 focus:border-blue-600 transition-all outline-none text-slate-900 placeholder-slate-400 font-medium text-lg"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
                                 placeholder="nombre@empresa.com"
@@ -59,10 +59,10 @@ const LoginScreen = () => {
                             />
                         </InputGroup>
 
-                        <InputGroup label={<span className="text-blue-100">Contraseña</span>}>
+                        <InputGroup label={<span className="text-slate-600 font-bold uppercase tracking-wider text-xs">Contraseña</span>}>
                             <input
                                 type="password"
-                                className="w-full bg-slate-900/50 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all outline-none text-white placeholder-slate-400"
+                                className="w-full bg-transparent border-b-2 border-slate-200 px-0 py-3 focus:border-blue-600 transition-all outline-none text-slate-900 placeholder-slate-400 font-medium text-lg"
                                 value={password}
                                 onChange={e => setPassword(e.target.value)}
                                 placeholder="••••••••"
@@ -73,7 +73,7 @@ const LoginScreen = () => {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:bg-blue-800/50 disabled:cursor-not-allowed group"
+                            className="w-full bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-700 hover:to-cyan-600 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/40 disabled:opacity-70 disabled:cursor-not-allowed group transform hover:-translate-y-0.5"
                         >
                             {loading ? (
                                 <>
@@ -81,13 +81,16 @@ const LoginScreen = () => {
                                     Validando credenciales...
                                 </>
                             ) : (
-                                <span className="tracking-wide">INICIAR SESIÓN</span>
+                                <span className="tracking-wide text-lg">INICIAR SESIÓN</span>
                             )}
                         </button>
                     </form>
+
+                    {/* Decorative element for the card */}
+                    <div className="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
                 </div>
 
-                <div className="mt-8 text-center text-xs text-blue-200/60 font-light">
+                <div className="mt-12 text-center text-xs text-slate-400 font-medium">
                     &copy; {new Date().getFullYear()} [PROTEO] - Todos los derechos reservados
                 </div>
             </div>
