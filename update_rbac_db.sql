@@ -1,4 +1,4 @@
--- PASO 1: SISTEMA DE ROLES INTERNOS (Internal RBAC)
+Z-- PASO 1: SISTEMA DE ROLES INTERNOS (Internal RBAC)
 -- Ejecuta este script para habilitar la distinción Dueño vs Operador.
 
 -- 1. Agregar columna 'role' a la tabla 'profiles' (si no existe)

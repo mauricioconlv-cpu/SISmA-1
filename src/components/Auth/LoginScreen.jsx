@@ -23,57 +23,71 @@ const LoginScreen = () => {
     };
 
     return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-            <div className="bg-white rounded-xl shadow-2xl p-8 w-full max-w-md relative overflow-hidden">
+        <div className="min-h-screen flex items-center justify-center p-4 relative font-['Space_Grotesk'] overflow-hidden">
+            {/* Background Image & Overlay */}
+            <div
+                className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat fixed"
+                style={{ backgroundImage: "url('/images/proteo 2.png')" }}
+            >
+                <div className="absolute inset-0 bg-gradient-to-b from-slate-900/90 via-slate-900/40 to-slate-900/10"></div>
+            </div>
+
+            <div className="relative z-10 w-full max-w-md">
+
+                {/* Branding Section - Centered above form */}
                 <div className="text-center mb-8">
-                    <div className="bg-blue-600 p-4 rounded-full inline-block text-white mb-4 shadow-lg">
-                        <Truck size={40} />
-                    </div>
-                    <h2 className="text-3xl font-bold text-gray-800">Acceso Seguro</h2>
-                    <p className="text-gray-500 mt-2">Sistema de Despacho de Grúas</p>
+                    <h1 className="text-7xl font-bold text-white tracking-widest leading-none drop-shadow-2xl">
+                        PROTEO
+                    </h1>
+                    <h2 className="text-3xl font-light text-blue-100 tracking-wider mt-2 shadow-black drop-shadow-md">
+                        Ecosistema Operativo inteligente
+                    </h2>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <InputGroup label="Correo Electrónico">
-                        <input
-                            type="email"
-                            className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
-                            value={email}
-                            onChange={e => setEmail(e.target.value)}
-                            placeholder="nombre@empresa.com"
+                {/* Glassmorphic Card */}
+                <div className="bg-white/10 backdrop-blur-md rounded-2xl shadow-2xl p-8 border border-white/20">
+                    <form onSubmit={handleLogin} className="space-y-6">
+                        <InputGroup label={<span className="text-blue-100">Correo Electrónico</span>}>
+                            <input
+                                type="email"
+                                className="w-full bg-slate-900/50 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all outline-none text-white placeholder-slate-400"
+                                value={email}
+                                onChange={e => setEmail(e.target.value)}
+                                placeholder="nombre@empresa.com"
+                                disabled={loading}
+                            />
+                        </InputGroup>
+
+                        <InputGroup label={<span className="text-blue-100">Contraseña</span>}>
+                            <input
+                                type="password"
+                                className="w-full bg-slate-900/50 border border-slate-600 p-3 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-blue-400 transition-all outline-none text-white placeholder-slate-400"
+                                value={password}
+                                onChange={e => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                disabled={loading}
+                            />
+                        </InputGroup>
+
+                        <button
+                            type="submit"
                             disabled={loading}
-                        />
-                    </InputGroup>
+                            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-xl font-bold transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/30 disabled:bg-blue-800/50 disabled:cursor-not-allowed group"
+                        >
+                            {loading ? (
+                                <>
+                                    <Loader2 className="animate-spin" size={20} />
+                                    Validando credenciales...
+                                </>
+                            ) : (
+                                <span className="tracking-wide">INICIAR SESIÓN</span>
+                            )}
+                        </button>
+                    </form>
+                </div>
 
-                    <InputGroup label="Contraseña">
-                        <input
-                            type="password"
-                            className="w-full border border-gray-300 p-3 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all outline-none"
-                            value={password}
-                            onChange={e => setPassword(e.target.value)}
-                            placeholder="••••••••"
-                            disabled={loading}
-                        />
-                    </InputGroup>
-
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-blue-600 text-white py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors flex items-center justify-center gap-2 shadow-md disabled:bg-blue-400"
-                    >
-                        {loading ? (
-                            <>
-                                <Loader2 className="animate-spin" size={20} />
-                                Validando...
-                            </>
-                        ) : (
-                            "Ingresar al Sistema"
-                        )}
-                    </button>
-                </form>
-
-                <div className="mt-6 text-center text-xs text-gray-400">
-                    &copy; {new Date().getFullYear()} Plataforma Integral de Asistencia
+                <div className="mt-8 text-center text-xs text-blue-200/60 font-light">
+                    &copy; {new Date().getFullYear()} [PROTEO] - Todos los derechos reservados
                 </div>
             </div>
         </div>

@@ -64,7 +64,7 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
             <div className="p-6 border-b border-slate-700">
                 <h1 className="text-xl font-bold flex items-center gap-2">
                     <Truck className="text-blue-400" />
-                    Control Grúas
+                    [PROTEO]
                 </h1>
                 <div className="mt-4 text-xs text-slate-400">
                     <p>Bienvenido,</p>

@@ -188,7 +188,7 @@ const Dashboard = ({ user, onNavigate }) => {
             <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 mb-8 flex justify-between items-center">
                 <div>
                     <h1 className="text-3xl font-bold text-slate-800 mb-2">
-                        Bienvenido, <span className="text-blue-600">{greetingName}</span>
+                        Bienvenido a <span className="text-blue-600">[PROTEO]</span>, tu sistema de gestión de grúas
                     </h1>
                     <p className="text-slate-500">
                         {isSuperAdmin ? 'Resumen general de la plataforma SaaS.' : 'Aquí tienes un resumen de la operación de hoy.'}

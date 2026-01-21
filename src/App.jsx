@@ -96,6 +96,9 @@ const AppContent = () => {
             />
             <main className="flex-1 ml-64 overflow-y-auto p-8">
                 {renderContent()}
+                <footer className="mt-auto pt-8 border-t border-slate-200 text-center text-slate-400 text-sm pb-4">
+                    © 2026 [PROTEO]
+                </footer>
             </main>
         </div>
     );

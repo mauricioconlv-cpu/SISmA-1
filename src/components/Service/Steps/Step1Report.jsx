@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../../supabaseClient';
 import { User, Wrench, MapPin, Save, Truck, Edit3, ArrowLeft } from 'lucide-react';
 import { InputGroup, SectionTitle, StyledInput, StyledSelect, StyledTextArea } from '../../Shared/UIComponents';
 import MapPicker from '../../Shared/MapPicker';
 import WizardVehicle from '../WizardVehicle';
 import WizardDestination from '../WizardDestination';
 
+// Updated Step1Report - Version 2.0 (Clean Props)
 const Step1Report = ({
     formData,
     setFormData,
-    clients,
+    clients, // <--- LISTA FILTRADA DESDE SERVICE WIZARD (CONTEXTO)
     onNext,
     onBack,
     onSave,
@@ -18,47 +18,17 @@ const Step1Report = ({
     selectedService,
     user
 }) => {
-    // Local State for Clients because Global Context has race conditions
-    const [localClients, setLocalClients] = useState([{ id: 'particular', name: 'PARTICULAR' }]);
-    const [isLoadingClients, setIsLoadingClients] = useState(false);
 
-    // Fetch Clients dynamically - User Agnostic (Frontend shouldn't block, let RLS handle)
-    useEffect(() => {
-        if (!user) return;
+    // Debug para verificar qué llega realmente
+    // console.log("Step1Report v2: Clients prop:", clients);
 
-        const fetchClients = async () => {
-            setIsLoadingClients(true);
-            try {
-                let query = supabase
-                    .from('clients')
-                    .select('id, name')
-                    .order('name', { ascending: true });
+    // Combine 'PARTICULAR' with the passed clients prop.
+    const localClients = [
+        { id: 'particular', name: 'PARTICULAR' },
+        ...(clients || [])
+    ];
 
-                // Only apply filter if company context exists. 
-                // If SuperAdmin (no company_id), they might see all (via RLS/Policy)
-                if (user.company_id) {
-                    query = query.eq('company_id', user.company_id);
-                }
-
-                const { data, error } = await query;
-
-                if (error) throw error;
-
-                if (data) {
-                    setLocalClients([
-                        { id: 'particular', name: 'PARTICULAR' },
-                        ...data
-                    ]);
-                }
-            } catch (error) {
-                console.error("Error fetching clients in Step1:", error);
-            } finally {
-                setIsLoadingClients(false);
-            }
-        };
-
-        fetchClients();
-    }, [user]); // Depend on user object
+    const isLoadingClients = false;
 
     // --- HANDLERS ---
     const handleChange = (e) => {
@@ -93,24 +63,20 @@ const Step1Report = ({
         if (value === 'particular') {
             setFormData(prev => ({
                 ...prev,
-                clientId: null, // Send null or handle as 0000.. in parent
+                clientId: null,
                 cliente: 'Particular',
-                folioCliente: '', // Reset if needed
+                folioCliente: '',
             }));
             return;
         }
 
         // Caso: Cliente Real
-        // Try to find by string comparison first (safe for UUIDs or Ints)
+        // Buscamos por ID (comparando como string para seguridad mix number/string)
         const selectedClient = localClients.find(c => String(c.id) === value);
 
         if (selectedClient) {
             setFormData(prev => ({
                 ...prev,
-                // If the original IDs are integers and we need integers, we can parse. 
-                // But Supabase often uses UUIDs. If the existing code used parseInt, it implies integers.
-                // However, 'particular' check handles our special case.
-                // We'll store the ID as it comes from DB.
                 clientId: selectedClient.id,
                 cliente: selectedClient.name,
             }));
@@ -178,7 +144,6 @@ const Step1Report = ({
                                 readOnly={isLocked}
                                 disabled={isLoadingClients}
                             >
-                                {/* Option 'particular' is included in localClients */}
                                 {localClients.map(client => (
                                     <option key={client.id} value={client.id}>
                                         {client.name}

@@ -44,7 +44,7 @@ BEGIN
         VALUES (
             'Grúas La Fundición',
             'GLF20230505ABC',
-            'Av. Fundición 500, Monterrey, NL',
+            'Carretera montealban, Oaxaca,',
             'gruaslafundicion@gmail.com',
             true
         ) RETURNING id INTO v_company_id;
