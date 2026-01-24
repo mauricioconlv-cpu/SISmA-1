@@ -10,7 +10,7 @@ const ClientManagement = ({ onManageTariffs }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [currentClient, setCurrentClient] = useState(null);
 
-    const canEditFinancials = ['owner', 'superadmin'].includes(user?.role);
+    const canEditFinancials = ['owner', 'superadmin', 'company_admin'].includes(user?.role);
     // Fallback: If no user load yet, assume strict.
 
 
