@@ -108,11 +108,11 @@ const History = ({ onEdit }) => {
                                     {s.clients?.name || s.cliente || 'Sin Cliente'}
                                 </td>
                                 <td className="p-3">
-                                    {/* PREFER JOINED DATA for Crane/Vehicle */}
-                                    {s.vehicles?.brand ? (
+                                    {/* PREFER vehicle_data JSON (Customer Vehicle) */}
+                                    {s.vehicle_data?.marca || s.vehicle_data?.brand ? (
                                         <>
-                                            {s.vehicles.brand} {s.vehicles.economic_number ? `#${s.vehicles.economic_number}` : ''}
-                                            <span className="text-xs text-gray-500 ml-1">({s.vehicles.plates || s.placas})</span>
+                                            {s.vehicle_data.marca || s.vehicle_data.brand} {s.vehicle_data.submarca}
+                                            <span className="text-xs text-gray-500 ml-1">({s.vehicle_data.placas || s.placas})</span>
                                         </>
                                     ) : (
                                         <>
@@ -120,8 +120,12 @@ const History = ({ onEdit }) => {
                                         </>
                                     )}
                                 </td>
-                                <td className="p-3 truncate max-w-[150px]" title={s.calleOrigen}>{s.calleOrigen}</td>
-                                <td className="p-3 truncate max-w-[150px]" title={s.calleDestino}>{s.calleDestino}</td>
+                                <td className="p-3 truncate max-w-[150px]" title={s.origin_address || s.calleOrigen}>
+                                    {s.origin_address || s.calleOrigen}
+                                </td>
+                                <td className="p-3 truncate max-w-[150px]" title={s.destination_address || s.calleDestino}>
+                                    {s.destination_address || s.calleDestino}
+                                </td>
                                 <td className="p-3">
                                     <span className={`px-2 py-1 rounded text-xs text-white font-bold flex items-center gap-1 w-fit
                                         ${s.status === 'Finalizado' ? 'bg-green-500' :

@@ -126,7 +126,40 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
         if (serviceId) {
             const serviceData = getServiceByFolio(serviceId);
             if (serviceData) {
-                setFormData(serviceData);
+                // HYDRATION MAPPING: DB -> State
+                // We must map the flat/JSON structure back to the form's expected flat state
+                const hydratedState = {
+                    ...serviceData, // Base properties (id, folio, status, etc.)
+
+                    // 1. Client ID
+                    clientId: serviceData.client_id || serviceData.clientId,
+
+                    // 2. Addresses (Flat in DB -> State keys)
+                    calleOrigen: serviceData.origin_address || serviceData.calleOrigen,
+                    coordsOrigen: serviceData.origin_coords || serviceData.coordsOrigen,
+                    calleDestino: serviceData.destination_address || serviceData.calleDestino,
+                    coordsDestino: serviceData.destination_coords || serviceData.coordsDestino,
+
+                    // 3. Vehicle Data (JSON -> Flat State keys)
+                    vehiculo: serviceData.vehicle_data?.vehiculo || serviceData.vehicle_data?.type || '',
+                    marca: serviceData.vehicle_data?.marca || serviceData.vehicle_data?.brand || '',
+                    submarca: serviceData.vehicle_data?.submarca || '',
+                    placas: serviceData.vehicle_data?.placas || serviceData.vehicle_data?.plates || '',
+                    color: serviceData.vehicle_data?.color || '',
+                    descripcionDanios: serviceData.vehicle_data?.descripcionDanios || '',
+                    tipoFalla: serviceData.vehicle_data?.tipoFalla || '',
+
+                    // 4. Maniobra (JSON -> Flat State keys)
+                    vehiculoEnNeutral: serviceData.vehicle_data?.maniobra?.vehiculoEnNeutral || 'Si',
+                    llantasGiran: serviceData.vehicle_data?.maniobra?.llantasGiran || 'Si',
+                    volanteGira: serviceData.vehicle_data?.maniobra?.volanteGira || 'Si',
+
+                    // 5. Assignment IDs
+                    grua: serviceData.assignment_data?.grua || '',
+                    operador: serviceData.assignment_data?.operador || '',
+                };
+
+                setFormData(hydratedState);
                 setFolio(serviceData.folio);
 
                 // Restore Selected Service Type
@@ -135,11 +168,11 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
 
                 // Smart Resume Logic
                 const s = serviceData.status ? serviceData.status.toUpperCase() : '';
-                if (['ASIGNADO', 'ASIGNADA', 'EN SITIO', 'EN_SITIO', 'CONTACTO', 'TRASLADO', 'FINALIZADO'].includes(s)) {
+                if (['ASIGNADO', 'ASIGNADA', 'EN SITIO', 'EN_SITIO', 'CONTACTO', 'TRASLADO', 'FINALIZADO', 'CERRADO'].includes(s)) {
                     setStep(3);
                     setIsLocked(true);
                     setIsAssignmentLocked(true);
-                } else if (serviceData.grua && serviceData.operador) {
+                } else if (serviceData.assignment_data?.grua && serviceData.assignment_data?.operador) {
                     setStep(2);
                     setIsLocked(true);
                 } else {
