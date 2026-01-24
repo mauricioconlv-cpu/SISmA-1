@@ -131,8 +131,11 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 const hydratedState = {
                     ...serviceData, // Base properties (id, folio, status, etc.)
 
-                    // 1. Client ID
+                    // 1. Client ID & Info
                     clientId: serviceData.client_id || serviceData.clientId,
+                    // HYDRATION ENHANCEMENT: Populate client name from join if available
+                    cliente: serviceData.clients?.name || serviceData.clients?.business_name || serviceData.cliente || '',
+                    folioCliente: serviceData.folioCliente || '',
 
                     // 2. Addresses (Flat in DB -> State keys)
                     calleOrigen: serviceData.origin_address || serviceData.calleOrigen,
@@ -157,7 +160,18 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     // 5. Assignment IDs
                     grua: serviceData.assignment_data?.grua || '',
                     operador: serviceData.assignment_data?.operador || '',
+
+                    // 6. Report Data (JSON -> Flat State keys)
+                    nombreReporta: serviceData.report_data?.nombreReporta || '',
+                    telefonoAsegurado: serviceData.report_data?.telefonoReporta || '',
+                    folioCliente: serviceData.report_data?.folioCliente || '',
+                    motivoSolicitud: serviceData.report_data?.motivoSolicitud || '',
+                    descripcionServicio: serviceData.report_data?.descripcionServicio || '',
+                    tipoServicio: serviceData.report_data?.tipoServicio || 'Local',
                 };
+
+                // Force Lock on Load (Read-Only Default)
+                setIsLocked(true);
 
                 setFormData(hydratedState);
                 setFolio(serviceData.folio);
@@ -628,16 +642,26 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <span className="bg-blue-600 text-xs font-bold px-2 py-1 rounded uppercase tracking-wider">
-                            {serviceId ? 'Editando' : 'Nuevo Servicio'}
+                        <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${isLocked ? 'bg-slate-700 text-slate-300' : 'bg-blue-600'}`}>
+                            {serviceId ? (isLocked ? 'Modo Lectura' : 'Editando') : 'Nuevo Servicio'}
                         </span>
                         <span className="text-slate-400 text-sm font-mono">#{folio}</span>
                     </div>
                     <h2 className="text-4xl font-bold tracking-tight">
-                        {serviceId ? `Modificando Servicio #${folio}` : (step === 0 ? 'Crear Nuevo Servicio' : step === 1 ? 'Reporte de Servicio' : step === 2 ? 'Asignación de Unidad' : 'Monitoreo en Tiempo Real')}
+                        {serviceId ? `Servicio #${folio}` : (step === 0 ? 'Crear Nuevo Servicio' : step === 1 ? 'Reporte de Servicio' : step === 2 ? 'Asignación de Unidad' : 'Monitoreo en Tiempo Real')}
                     </h2>
                 </div>
-                <div className="text-right">
+                <div className="text-right flex flex-col items-end gap-2">
+                    {/* EDIT BUTTON ACTION */}
+                    {serviceId && isLocked && (
+                        <button
+                            onClick={() => setIsLocked(false)}
+                            className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-all"
+                        >
+                            <Edit3 size={18} /> Modificar Servicio
+                        </button>
+                    )}
+
                     <div className="text-3xl font-black text-blue-400">
                         {new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </div>
