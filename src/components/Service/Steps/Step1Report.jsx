@@ -250,16 +250,20 @@ const Step1Report = ({
                         >
                             <Truck size={20} /> Continuar a Asignación
                         </button>
-                        <button
-                            onClick={onUnlock}
-                            className="px-10 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center gap-3 transition-all bg-amber-500 text-white hover:bg-amber-600"
-                        >
-                            <Edit3 size={20} /> Modificar Datos
-                        </button>
+
+                        {/* VALIDACIÓN DE PERMISOS: Solo si tiene permiso can_edit_expedient o NO es ejecutivo */}
+                        {(user?.role !== 'executive' || user?.permissions?.can_edit_expedient) && (
+                            <button
+                                onClick={onUnlock}
+                                className="px-10 py-4 rounded-xl font-bold text-lg shadow-lg flex items-center gap-3 transition-all bg-amber-500 text-white hover:bg-amber-600"
+                            >
+                                <Edit3 size={20} /> Modificar Datos
+                            </button>
+                        )}
                     </>
                 )}
             </div>
-        </div>
+        </div >
     );
 };
 
