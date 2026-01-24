@@ -183,9 +183,13 @@ export const ServiceProvider = ({ children }) => {
 
                 // Address Columns (Flat)
                 origin_address: newService.calleOrigen,
-                origin_coords: newService.coordsOrigen,
+                origin_coords: newService.latitudOrigen && newService.longitudOrigen
+                    ? { lat: newService.latitudOrigen, lng: newService.longitudOrigen }
+                    : newService.coordsOrigen,
                 destination_address: newService.calleDestino,
-                destination_coords: newService.coordsDestino,
+                destination_coords: newService.latitudDestino && newService.longitudDestino
+                    ? { lat: newService.latitudDestino, lng: newService.longitudDestino }
+                    : newService.coordsDestino,
 
                 // Columnas JSONB (Aquí adentro va todo lo demás)
                 vehicle_data: vehicle_data || {},
@@ -296,9 +300,13 @@ export const ServiceProvider = ({ children }) => {
 
                 // Address Columns (Flat)
                 origin_address: updatedData.calleOrigen,
-                origin_coords: updatedData.coordsOrigen,
+                origin_coords: updatedData.latitudOrigen && updatedData.longitudOrigen
+                    ? { lat: updatedData.latitudOrigen, lng: updatedData.longitudOrigen }
+                    : updatedData.coordsOrigen,
                 destination_address: updatedData.calleDestino,
-                destination_coords: updatedData.coordsDestino,
+                destination_coords: updatedData.latitudDestino && updatedData.longitudDestino
+                    ? { lat: updatedData.latitudDestino, lng: updatedData.longitudDestino }
+                    : updatedData.coordsDestino,
 
                 // JSONB columns
                 vehicle_data: vehicle_data || {},

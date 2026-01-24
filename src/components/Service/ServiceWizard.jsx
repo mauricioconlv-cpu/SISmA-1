@@ -137,16 +137,29 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     cliente: serviceData.clients?.name || serviceData.clients?.business_name || serviceData.cliente || '',
 
                     // 2. Addresses (Flat in DB -> State keys)
+                    // 2. Addresses (Flat in DB -> State keys)
                     calleOrigen: serviceData.origin_address || serviceData.calleOrigen,
-                    coordsOrigen: serviceData.origin_coords || serviceData.coordsOrigen,
-                    // Parse Coordinates for MapPicker
-                    latitudOrigen: (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[0]?.trim(),
-                    longitudOrigen: (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[1]?.trim(),
+                    coordsOrigen: typeof serviceData.origin_coords === 'object'
+                        ? `${serviceData.origin_coords?.lat}, ${serviceData.origin_coords?.lng}`
+                        : (serviceData.origin_coords || serviceData.coordsOrigen),
+                    // Parse Coordinates for MapPicker (Safe for both JSON and String)
+                    latitudOrigen: typeof serviceData.origin_coords === 'object'
+                        ? serviceData.origin_coords?.lat
+                        : (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[0]?.trim(),
+                    longitudOrigen: typeof serviceData.origin_coords === 'object'
+                        ? serviceData.origin_coords?.lng
+                        : (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[1]?.trim(),
 
                     calleDestino: serviceData.destination_address || serviceData.calleDestino,
-                    coordsDestino: serviceData.destination_coords || serviceData.coordsDestino,
-                    latitudDestino: (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[0]?.trim(),
-                    longitudDestino: (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[1]?.trim(),
+                    coordsDestino: typeof serviceData.destination_coords === 'object'
+                        ? `${serviceData.destination_coords?.lat}, ${serviceData.destination_coords?.lng}`
+                        : (serviceData.destination_coords || serviceData.coordsDestino),
+                    latitudDestino: typeof serviceData.destination_coords === 'object'
+                        ? serviceData.destination_coords?.lat
+                        : (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[0]?.trim(),
+                    longitudDestino: typeof serviceData.destination_coords === 'object'
+                        ? serviceData.destination_coords?.lng
+                        : (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[1]?.trim(),
 
                     // 3. Vehicle Data (JSON -> Flat State keys)
                     vehiculo: serviceData.vehicle_data?.vehiculo || serviceData.vehicle_data?.type || '',
@@ -167,13 +180,13 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     operador: serviceData.assignment_data?.operador || '',
 
                     // 6. Report Data (Correctly Mapped from assignment_data as requested)
-                    nombreReporta: serviceData.report_data?.nombreReporta || serviceData.assignment_data?.nombreReporta || serviceData.assignment_data?.report_name || '',
+                    nombreReporta: serviceData.assignment_data?.nombreReporta || serviceData.report_data?.nombreReporta || serviceData.assignment_data?.report_name || '',
                     nombreAsegurado: serviceData.assignment_data?.nombreAsegurado || serviceData.report_data?.nombreAsegurado || '',
-                    telefonoAsegurado: serviceData.report_data?.telefonoReporta || serviceData.assignment_data?.telefonoReporta || serviceData.assignment_data?.report_phone || '',
-                    folioCliente: serviceData.report_data?.folioCliente || serviceData.assignment_data?.folioCliente || '',
-                    motivoSolicitud: serviceData.report_data?.motivoSolicitud || serviceData.assignment_data?.motivoSolicitud || '',
-                    descripcionServicio: serviceData.report_data?.descripcionServicio || serviceData.assignment_data?.descripcionServicio || '',
-                    tipoServicio: serviceData.report_data?.tipoServicio || serviceData.assignment_data?.tipoServicio || 'Local',
+                    telefonoAsegurado: serviceData.assignment_data?.telefonoReporta || serviceData.report_data?.telefonoReporta || serviceData.assignment_data?.report_phone || '',
+                    folioCliente: serviceData.assignment_data?.folioCliente || serviceData.report_data?.folioCliente || '',
+                    motivoSolicitud: serviceData.assignment_data?.motivoSolicitud || serviceData.report_data?.motivoSolicitud || '',
+                    descripcionServicio: serviceData.assignment_data?.descripcionServicio || serviceData.report_data?.descripcionServicio || '',
+                    tipoServicio: serviceData.assignment_data?.tipoServicio || serviceData.report_data?.tipoServicio || 'Local',
                 };
 
                 // Force Lock on Load (Read-Only Default)
@@ -481,7 +494,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             if (!formData.clientId) return alert("Error: No se ha seleccionado un cliente válido (ID perdido).");
         }
 
-        if (selectedService.category === 'vehicular') {
+        if (selectedService?.category === 'vehicular') {
             if (!formData.motivoSolicitud) return alert("Seleccione el motivo de solicitud (Siniestro/Asistencia)");
             if (!formData.vehiculo || !formData.placas) return alert("Vehículo y Placas son obligatorios");
         } else {
