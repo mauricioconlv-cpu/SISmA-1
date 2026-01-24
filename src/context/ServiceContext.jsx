@@ -128,11 +128,19 @@ export const ServiceProvider = ({ children }) => {
                 }
             }
 
+            // --- VALIDACIÓN CRÍTICA COMPANY_ID ---
+            const validCompanyId = user?.company_id || user?.company?.id;
+
+            if (!validCompanyId) {
+                console.error("⛔ CRITICAL: Intentando guardar servicio sin company_id");
+                throw new Error("Error de Integridad: No se ha detectado una empresa asignada a tu sesión. Por favor recarga la página.");
+            }
+
             const serviceToInsert = {
                 // Columnas Fijas que SÍ existen en Supabase
                 folio: newService.folio || getNextFolio(),
                 client_id: validClientId,
-                company_id: user.company_id, // ENFORCE DATA OWNERSHIP
+                company_id: validCompanyId, // ENFORCE DATA OWNERSHIP
                 status: 'Activo',
 
                 // Columnas JSONB (Aquí adentro va todo lo demás)
