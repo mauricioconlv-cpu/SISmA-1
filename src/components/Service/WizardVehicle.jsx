@@ -26,19 +26,19 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
 
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
                     <InputGroup label="Vehículo *" required>
-                        <StyledInput name="vehiculo" value={formData.vehiculo} onChange={handleChange} readOnly={isLocked} />
+                        <StyledInput name="vehiculo" value={formData.vehiculo} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
                     <InputGroup label="Marca">
-                        <StyledSelect name="marca" value={formData.marca} onChange={handleChange} readOnly={isLocked}>
+                        <StyledSelect name="marca" value={formData.marca} onChange={handleChange} disabled={isLocked}>
                             <option value="">-- Seleccione --</option>
                             {MARCAS_MX.map(m => <option key={m} value={m}>{m}</option>)}
                         </StyledSelect>
                     </InputGroup>
                     <InputGroup label="Placas *" required>
-                        <StyledInput name="placas" value={formData.placas} onChange={handleChange} readOnly={isLocked} className="bg-yellow-50 font-bold" />
+                        <StyledInput name="placas" value={formData.placas} onChange={handleChange} disabled={isLocked} className="bg-yellow-50 font-bold" />
                     </InputGroup>
                     <InputGroup label="Color">
-                        <StyledSelect name="color" value={formData.color} onChange={handleChange} readOnly={isLocked}>
+                        <StyledSelect name="color" value={formData.color} onChange={handleChange} disabled={isLocked}>
                             <option value="">-- Seleccione --</option>
                             {COLORES.map(c => <option key={c} value={c}>{c}</option>)}
                         </StyledSelect>
@@ -51,7 +51,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                         <h4 className="font-bold text-red-800 mb-3">Detalles del Siniestro</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <InputGroup label="¿Cuáles son los daños?">
-                                <StyledTextArea name="descripcionDanios" value={formData.descripcionDanios} onChange={handleChange} readOnly={isLocked} className="h-20" />
+                                <StyledTextArea name="descripcionDanios" value={formData.descripcionDanios} onChange={handleChange} disabled={isLocked} className="h-20" />
                             </InputGroup>
                             <InputGroup label="Fotos del Siniestro (Max 2MB)">
                                 <input type="file" name="fotosDanios" accept="image/png, image/jpeg" onChange={handleChange} disabled={isLocked} className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-red-100 file:text-red-700 hover:file:bg-red-200 disabled:opacity-50 disabled:cursor-not-allowed" />
@@ -70,7 +70,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                         <h4 className="font-bold text-blue-800 mb-3">Detalles de Asistencia</h4>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <InputGroup label="Tipo de Falla">
-                                <StyledSelect name="tipoFalla" value={formData.tipoFalla} onChange={handleChange} readOnly={isLocked}>
+                                <StyledSelect name="tipoFalla" value={formData.tipoFalla} onChange={handleChange} disabled={isLocked}>
                                     <option value="">-- Seleccione --</option>
                                     <option value="Mecánica">Mecánica</option>
                                     <option value="Eléctrica">Eléctrica</option>
@@ -80,7 +80,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                             </InputGroup>
                             {formData.tipoFalla && (
                                 <InputGroup label="Especifique Falla">
-                                    <StyledInput name="especifiqueFalla" value={formData.especifiqueFalla} onChange={handleChange} readOnly={isLocked} />
+                                    <StyledInput name="especifiqueFalla" value={formData.especifiqueFalla} onChange={handleChange} disabled={isLocked} />
                                 </InputGroup>
                             )}
                         </div>
@@ -102,7 +102,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                         {formData.vehiculoEnNeutral === 'No' && (
                             <div className="mt-2 animate-fade-in">
                                 <InputGroup label="Tipo de Transmisión">
-                                    <StyledSelect name="tipoTransmision" value={formData.tipoTransmision} onChange={handleChange} readOnly={isLocked}>
+                                    <StyledSelect name="tipoTransmision" value={formData.tipoTransmision} onChange={handleChange} disabled={isLocked}>
                                         <option value="">-- Seleccione --</option>
                                         <option value="Estándar">Estándar</option>
                                         <option value="Automático">Automático</option>
@@ -141,7 +141,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                         {formData.vehiculoPieCalle === 'No' && (
                             <div className="mt-2 animate-fade-in space-y-3">
                                 <InputGroup label="¿Dónde está?">
-                                    <StyledSelect name="ubicacionDetalle" value={formData.ubicacionDetalle} onChange={handleChange} readOnly={isLocked}>
+                                    <StyledSelect name="ubicacionDetalle" value={formData.ubicacionDetalle} onChange={handleChange} disabled={isLocked}>
                                         <option value="">-- Seleccione --</option>
                                         <option value="Garage">Garage de Casa</option>
                                         <option value="Estacionamiento">Estacionamiento Público/Plaza</option>
@@ -150,7 +150,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
 
                                 {formData.ubicacionDetalle === 'Garage' && (
                                     <InputGroup label="Tipo de Garage">
-                                        <StyledSelect name="tipoGarage" value={formData.tipoGarage} onChange={handleChange} readOnly={isLocked}>
+                                        <StyledSelect name="tipoGarage" value={formData.tipoGarage} onChange={handleChange} disabled={isLocked}>
                                             <option value="">-- Seleccione --</option>
                                             <option value="Techado">Techado</option>
                                             <option value="Aire Libre">Aire Libre</option>
@@ -162,13 +162,13 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                                 {formData.ubicacionDetalle === 'Estacionamiento' && (
                                     <div className="space-y-2">
                                         <InputGroup label="Nivel">
-                                            <StyledSelect name="nivelEstacionamiento" value={formData.nivelEstacionamiento} onChange={handleChange} readOnly={isLocked}>
+                                            <StyledSelect name="nivelEstacionamiento" value={formData.nivelEstacionamiento} onChange={handleChange} disabled={isLocked}>
                                                 <option value="">-- Nivel --</option>
                                                 {[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
                                             </StyledSelect>
                                         </InputGroup>
                                         <InputGroup label="Tipo Rampa">
-                                            <StyledSelect name="tipoRampa" value={formData.tipoRampa} onChange={handleChange} readOnly={isLocked}>
+                                            <StyledSelect name="tipoRampa" value={formData.tipoRampa} onChange={handleChange} disabled={isLocked}>
                                                 <option value="">-- Seleccione --</option>
                                                 <option value="Recta">Recta</option>
                                                 <option value="Zig Zag">Zig Zag</option>
@@ -176,7 +176,7 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                                             </StyledSelect>
                                         </InputGroup>
                                         <InputGroup label="Altura Aprox (mts)">
-                                            <StyledInput name="alturaEstacionamiento" value={formData.alturaEstacionamiento} onChange={handleChange} placeholder="ej. 2.10" readOnly={isLocked} />
+                                            <StyledInput name="alturaEstacionamiento" value={formData.alturaEstacionamiento} onChange={handleChange} placeholder="ej. 2.10" disabled={isLocked} />
                                         </InputGroup>
                                         <InputGroup label="Foto Referencia">
                                             <input type="file" name="fotosManiobra" accept="image/*" onChange={handleChange} disabled={isLocked} className="text-xs disabled:opacity-50" />

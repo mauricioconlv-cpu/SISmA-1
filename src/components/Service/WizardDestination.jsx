@@ -10,7 +10,7 @@ const WizardDestination = ({ formData, handleChange, handleLocationSelect, isLoc
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 <div className="space-y-4">
                     <InputGroup label="¿A dónde se lleva?">
-                        <StyledSelect name="tipoDestino" value={formData.tipoDestino} onChange={handleChange} readOnly={isLocked}>
+                        <StyledSelect name="tipoDestino" value={formData.tipoDestino} onChange={handleChange} disabled={isLocked}>
                             <option value="">-- Seleccione --</option>
                             <option value="Taller">Taller Mecánico</option>
                             <option value="Agencia">Agencia Automotriz</option>
@@ -22,26 +22,26 @@ const WizardDestination = ({ formData, handleChange, handleLocationSelect, isLoc
                     {formData.motivoSolicitud === 'Siniestro' && (
                         <>
                             <InputGroup label="Taller / Agencia Destino">
-                                <StyledInput name="tallerDestino" value={formData.tallerDestino} onChange={handleChange} readOnly={isLocked} />
+                                <StyledInput name="tallerDestino" value={formData.tallerDestino} onChange={handleChange} disabled={isLocked} />
                             </InputGroup>
                             <div className="grid grid-cols-2 gap-4">
                                 <InputGroup label="Persona que Recibe">
-                                    <StyledInput name="personaRecibe" value={formData.personaRecibe} onChange={handleChange} readOnly={isLocked} />
+                                    <StyledInput name="personaRecibe" value={formData.personaRecibe} onChange={handleChange} disabled={isLocked} />
                                 </InputGroup>
                                 <InputGroup label="No. de Vale">
-                                    <StyledInput name="noVale" value={formData.noVale} onChange={handleChange} readOnly={isLocked} />
+                                    <StyledInput name="noVale" value={formData.noVale} onChange={handleChange} disabled={isLocked} />
                                 </InputGroup>
                             </div>
                         </>
                     )}
 
                     <div className="grid grid-cols-2 gap-4">
-                        <InputGroup label="Calle y Número"><StyledInput name="calleDestino" value={formData.calleDestino} onChange={handleChange} readOnly={isLocked} /></InputGroup>
-                        <InputGroup label="Colonia"><StyledInput name="coloniaDestino" value={formData.coloniaDestino} onChange={handleChange} readOnly={isLocked} /></InputGroup>
-                        <InputGroup label="Municipio"><StyledInput name="municipioDestino" value={formData.municipioDestino} onChange={handleChange} readOnly={isLocked} /></InputGroup>
-                        <InputGroup label="Estado"><StyledInput name="estadoDestino" value={formData.estadoDestino} onChange={handleChange} readOnly={isLocked} /></InputGroup>
+                        <InputGroup label="Calle y Número"><StyledInput name="calleDestino" value={formData.calleDestino} onChange={handleChange} disabled={isLocked} /></InputGroup>
+                        <InputGroup label="Colonia"><StyledInput name="coloniaDestino" value={formData.coloniaDestino} onChange={handleChange} disabled={isLocked} /></InputGroup>
+                        <InputGroup label="Municipio"><StyledInput name="municipioDestino" value={formData.municipioDestino} onChange={handleChange} disabled={isLocked} /></InputGroup>
+                        <InputGroup label="Estado"><StyledInput name="estadoDestino" value={formData.estadoDestino} onChange={handleChange} disabled={isLocked} /></InputGroup>
                     </div>
-                    <InputGroup label="Entre Calles"><StyledInput name="entreCallesDestino" value={formData.entreCallesDestino} onChange={handleChange} readOnly={isLocked} /></InputGroup>
+                    <InputGroup label="Entre Calles"><StyledInput name="entreCallesDestino" value={formData.entreCallesDestino} onChange={handleChange} disabled={isLocked} /></InputGroup>
                 </div>
 
                 <div className="space-y-6">
@@ -61,11 +61,11 @@ const WizardDestination = ({ formData, handleChange, handleLocationSelect, isLoc
 
                         {formData.viajaBajoInventario === 'No' ? (
                             <InputGroup label="¿Quién acompaña el traslado?">
-                                <StyledInput name="quienAcompana" value={formData.quienAcompana} onChange={handleChange} placeholder="Nombre del acompañante" readOnly={isLocked} />
+                                <StyledInput name="quienAcompana" value={formData.quienAcompana} onChange={handleChange} placeholder="Nombre del acompañante" disabled={isLocked} />
                             </InputGroup>
                         ) : (
                             <InputGroup label="¿Quién recibe en destino?">
-                                <StyledInput name="quienRecibe" value={formData.quienRecibe} onChange={handleChange} placeholder="Nombre de quien recibe" readOnly={isLocked} />
+                                <StyledInput name="quienRecibe" value={formData.quienRecibe} onChange={handleChange} placeholder="Nombre de quien recibe" disabled={isLocked} />
                             </InputGroup>
                         )}
                     </div>

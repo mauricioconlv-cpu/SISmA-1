@@ -141,8 +141,7 @@ const Step1Report = ({
                                 name="clientId"
                                 value={formData.clientId ? formData.clientId : 'particular'}
                                 onChange={handleClientChange}
-                                readOnly={isLocked}
-                                disabled={isLoadingClients}
+                                disabled={isLocked || isLoadingClients}
                             >
                                 {localClients.map(client => (
                                     <option key={client.id} value={client.id}>
@@ -153,16 +152,16 @@ const Step1Report = ({
                         </InputGroup>
                     )}
                     <InputGroup label="Folio Cliente" required={formData.cliente !== 'Particular'}>
-                        <StyledInput name="folioCliente" value={formData.folioCliente} onChange={handleChange} readOnly={isLocked} />
+                        <StyledInput name="folioCliente" value={formData.folioCliente} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
                     <InputGroup label="Nombre Reporta" required={formData.cliente !== 'Particular'}>
-                        <StyledInput name="nombreReporta" value={formData.nombreReporta} onChange={handleChange} readOnly={isLocked} />
+                        <StyledInput name="nombreReporta" value={formData.nombreReporta} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
                     <InputGroup label="Nombre Asegurado">
-                        <StyledInput name="nombreAsegurado" value={formData.nombreAsegurado} onChange={handleChange} readOnly={isLocked} />
+                        <StyledInput name="nombreAsegurado" value={formData.nombreAsegurado} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
                     <InputGroup label="Teléfono Asegurado">
-                        <StyledInput name="telefonoAsegurado" value={formData.telefonoAsegurado} onChange={handleChange} readOnly={isLocked} />
+                        <StyledInput name="telefonoAsegurado" value={formData.telefonoAsegurado} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
                 </div>
             </div>
@@ -183,7 +182,7 @@ const Step1Report = ({
                             onChange={handleChange}
                             placeholder="Describa detalladamente el servicio requerido (ej. fuga de agua en cocina, cambio de apagador, etc.)"
                             className="h-32"
-                            readOnly={isLocked}
+                            disabled={isLocked}
                         />
                     </InputGroup>
                 </div>
@@ -196,14 +195,14 @@ const Step1Report = ({
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div className="col-span-2"><InputGroup label="Calle y Número"><StyledInput name="calleOrigen" value={formData.calleOrigen} onChange={handleChange} readOnly={isLocked} /></InputGroup></div>
-                            <div className="col-span-2"><InputGroup label="Entre Calles"><StyledInput name="entreCallesOrigen" value={formData.entreCallesOrigen} onChange={handleChange} placeholder="ej. Entre Av. Reforma y Calle 5" readOnly={isLocked} /></InputGroup></div>
+                            <div className="col-span-2"><InputGroup label="Calle y Número"><StyledInput name="calleOrigen" value={formData.calleOrigen} onChange={handleChange} disabled={isLocked} /></InputGroup></div>
+                            <div className="col-span-2"><InputGroup label="Entre Calles"><StyledInput name="entreCallesOrigen" value={formData.entreCallesOrigen} onChange={handleChange} placeholder="ej. Entre Av. Reforma y Calle 5" disabled={isLocked} /></InputGroup></div>
 
-                            <InputGroup label="Colonia"><StyledInput name="coloniaOrigen" value={formData.coloniaOrigen} onChange={handleChange} readOnly={isLocked} /></InputGroup>
-                            <InputGroup label="Municipio"><StyledInput name="municipioOrigen" value={formData.municipioOrigen} onChange={handleChange} readOnly={isLocked} /></InputGroup>
-                            <InputGroup label="Estado"><StyledInput name="estadoOrigen" value={formData.estadoOrigen} onChange={handleChange} readOnly={isLocked} /></InputGroup>
+                            <InputGroup label="Colonia"><StyledInput name="coloniaOrigen" value={formData.coloniaOrigen} onChange={handleChange} disabled={isLocked} /></InputGroup>
+                            <InputGroup label="Municipio"><StyledInput name="municipioOrigen" value={formData.municipioOrigen} onChange={handleChange} disabled={isLocked} /></InputGroup>
+                            <InputGroup label="Estado"><StyledInput name="estadoOrigen" value={formData.estadoOrigen} onChange={handleChange} disabled={isLocked} /></InputGroup>
 
-                            <div className="col-span-2"><InputGroup label="Referencias Visuales"><StyledTextArea name="obsOrigen" value={formData.obsOrigen} onChange={handleChange} className="h-20" readOnly={isLocked} /></InputGroup></div>
+                            <div className="col-span-2"><InputGroup label="Referencias Visuales"><StyledTextArea name="obsOrigen" value={formData.obsOrigen} onChange={handleChange} className="h-20" disabled={isLocked} /></InputGroup></div>
                         </div>
                     </div>
                     <div>

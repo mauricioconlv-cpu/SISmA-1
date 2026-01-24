@@ -139,8 +139,14 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     // 2. Addresses (Flat in DB -> State keys)
                     calleOrigen: serviceData.origin_address || serviceData.calleOrigen,
                     coordsOrigen: serviceData.origin_coords || serviceData.coordsOrigen,
+                    // Parse Coordinates for MapPicker
+                    latitudOrigen: (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[0]?.trim(),
+                    longitudOrigen: (serviceData.origin_coords || serviceData.coordsOrigen || '').split(',')[1]?.trim(),
+
                     calleDestino: serviceData.destination_address || serviceData.calleDestino,
                     coordsDestino: serviceData.destination_coords || serviceData.coordsDestino,
+                    latitudDestino: (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[0]?.trim(),
+                    longitudDestino: (serviceData.destination_coords || serviceData.coordsDestino || '').split(',')[1]?.trim(),
 
                     // 3. Vehicle Data (JSON -> Flat State keys)
                     vehiculo: serviceData.vehicle_data?.vehiculo || serviceData.vehicle_data?.type || '',
@@ -162,6 +168,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
 
                     // 6. Report Data (Correctly Mapped from assignment_data as requested)
                     nombreReporta: serviceData.report_data?.nombreReporta || serviceData.assignment_data?.nombreReporta || serviceData.assignment_data?.report_name || '',
+                    nombreAsegurado: serviceData.assignment_data?.nombreAsegurado || serviceData.report_data?.nombreAsegurado || '',
                     telefonoAsegurado: serviceData.report_data?.telefonoReporta || serviceData.assignment_data?.telefonoReporta || serviceData.assignment_data?.report_phone || '',
                     folioCliente: serviceData.report_data?.folioCliente || serviceData.assignment_data?.folioCliente || '',
                     motivoSolicitud: serviceData.report_data?.motivoSolicitud || serviceData.assignment_data?.motivoSolicitud || '',
@@ -514,13 +521,23 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
 
         // SAVE TO CONTEXT (NEW OR UPDATE)
         try {
-            await addService(finalData);
+            if (serviceId && serviceId !== 'new') {
+                await updateService(folio, finalData);
 
-            // LOG: SERVICIO CAPTURADO
-            handleAddLog({
-                action: 'CAPTURA_DATOS',
-                details: `✅ SERVICIO CAPTURADO. Folio generado: ${folio}. Capturó: ${user?.nombre || 'Sistema'}`
-            });
+                // LOG: SERVICIO ACTUALIZADO
+                handleAddLog({
+                    action: 'ACTUALIZACION_DATOS',
+                    details: `📝 DATOS ACTUALIZADOS. Folio: ${folio}. Usuario: ${user?.nombre || 'Sistema'}`
+                });
+            } else {
+                await addService(finalData);
+
+                // LOG: SERVICIO CAPTURADO
+                handleAddLog({
+                    action: 'CAPTURA_DATOS',
+                    details: `✅ SERVICIO CAPTURADO. Folio generado: ${folio}. Capturó: ${user?.nombre || 'Sistema'}`
+                });
+            }
 
             if (onSave) onSave(finalData);
         } catch (error) {
@@ -817,7 +834,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                         onNext={() => setStep(2)}
                         onBack={() => setStep(0)}
                         onSave={handleAssignment}
-                        isViewMode={isViewMode}
+                        isLocked={isViewMode}
                         onUnlock={() => setShowUnlockModal(true)}
                         selectedService={selectedService}
                     />

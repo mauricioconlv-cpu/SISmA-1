@@ -21,9 +21,9 @@ export const SectionTitle = ({ title, icon }) => (
 export const StyledInput = (props) => (
     <input
         {...props}
-        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all ${props.readOnly
-                ? 'bg-transparent border-transparent shadow-none text-slate-700 font-medium px-0'
-                : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder-slate-400'
+        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all ${props.readOnly || props.disabled
+            ? 'bg-slate-100 border-transparent shadow-none text-slate-500 font-medium cursor-not-allowed'
+            : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder-slate-400'
             } ${props.className || ''}`}
     />
 );
@@ -32,9 +32,9 @@ export const StyledSelect = (props) => (
     <select
         {...props}
         disabled={props.readOnly} // Selects don't support readOnly, so we disable them but style them to look like text if possible, or just standard disabled
-        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all appearance-none ${props.readOnly
-                ? 'bg-transparent border-transparent shadow-none text-slate-700 font-medium px-0 disabled:opacity-100 disabled:bg-transparent'
-                : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm'
+        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all appearance-none ${props.readOnly || props.disabled
+            ? 'bg-slate-100 border-transparent shadow-none text-slate-500 font-medium cursor-not-allowed disabled:opacity-100'
+            : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm'
             } ${props.className || ''}`}
     >
         {props.children}
@@ -44,9 +44,9 @@ export const StyledSelect = (props) => (
 export const StyledTextArea = (props) => (
     <textarea
         {...props}
-        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all ${props.readOnly
-                ? 'bg-transparent border-transparent shadow-none text-slate-700 font-medium px-0 resize-none'
-                : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder-slate-400'
+        className={`w-full rounded-lg px-4 py-2.5 outline-none transition-all ${props.readOnly || props.disabled
+            ? 'bg-slate-100 border-transparent shadow-none text-slate-500 font-medium cursor-not-allowed resize-none'
+            : 'border border-slate-300 bg-white text-slate-900 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 shadow-sm placeholder-slate-400'
             } ${props.className || ''}`}
     />
 );
