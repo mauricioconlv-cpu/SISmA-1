@@ -101,7 +101,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     // --- STATE ---
     const [step, setStep] = useState(0); // 0: Selección, 1: Datos, 2: Asignación
     const [selectedService, setSelectedService] = useState(null);
-    const [isLocked, setIsLocked] = useState(false);
+    const [isViewMode, setIsViewMode] = useState(false);
     const [isAssignmentLocked, setIsAssignmentLocked] = useState(false);
     const [showUnlockModal, setShowUnlockModal] = useState(false);
     const [folio, setFolio] = useState(nextFolio || getNextFolio());
@@ -171,7 +171,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 };
 
                 // Force Lock on Load (Read-Only Default)
-                setIsLocked(true);
+                setIsViewMode(true);
 
                 setFormData(hydratedState);
                 setFolio(serviceData.folio);
@@ -185,14 +185,14 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 const s = serviceData.status ? serviceData.status.toUpperCase() : '';
                 if (['ASIGNADO', 'ASIGNADA', 'EN SITIO', 'EN_SITIO', 'CONTACTO', 'TRASLADO', 'FINALIZADO', 'CERRADO'].includes(s)) {
                     setStep(3);
-                    setIsLocked(true);
+                    setIsViewMode(true);
                     setIsAssignmentLocked(true);
                 } else if (serviceData.assignment_data?.grua && serviceData.assignment_data?.operador) {
                     setStep(2);
-                    setIsLocked(true);
+                    setIsViewMode(true);
                 } else {
                     setStep(1);
-                    setIsLocked(true);
+                    setIsViewMode(true);
                 }
             }
         }
@@ -391,7 +391,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     const handleServiceSelect = (service) => {
         setSelectedService(service);
         setStep(1);
-        setIsLocked(false); // Ensure inputs are unlocked for new service
+        setIsViewMode(false); // Ensure inputs are unlocked for new service
     };
 
     const generateAuditEntry = (oldData, newData, reason) => {
@@ -445,7 +445,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
         if (step === 2) {
             setIsAssignmentLocked(false);
         } else {
-            setIsLocked(false);
+            setIsViewMode(false);
         }
         setShowUnlockModal(false);
 
@@ -506,7 +506,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             horaAsignacion: finalData.horaAsignacion
         }));
 
-        setIsLocked(true);
+        setIsViewMode(true);
         setShowUnlockModal(false);
         setPreviousData(null); // Reset snapshot
 
@@ -642,8 +642,8 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             <div className="bg-slate-900 text-white p-6 flex justify-between items-center">
                 <div>
                     <div className="flex items-center gap-3 mb-1">
-                        <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${isLocked ? 'bg-slate-700 text-slate-300' : 'bg-blue-600'}`}>
-                            {serviceId ? (isLocked ? 'Modo Lectura' : 'Editando') : 'Nuevo Servicio'}
+                        <span className={`text-xs font-bold px-2 py-1 rounded uppercase tracking-wider ${isViewMode ? 'bg-slate-700 text-slate-300' : 'bg-blue-600'}`}>
+                            {serviceId ? (isViewMode ? 'Modo Lectura' : 'Editando') : 'Nuevo Servicio'}
                         </span>
                         <span className="text-slate-400 text-sm font-mono">#{folio}</span>
                     </div>
@@ -653,9 +653,9 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 </div>
                 <div className="text-right flex flex-col items-end gap-2">
                     {/* EDIT BUTTON ACTION */}
-                    {serviceId && isLocked && (
+                    {serviceId && isViewMode && (
                         <button
-                            onClick={() => setIsLocked(false)}
+                            onClick={() => setIsViewMode(false)}
                             className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 shadow-lg transition-all"
                         >
                             <Edit3 size={18} /> Modificar Servicio
@@ -818,7 +818,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                         onNext={() => setStep(2)}
                         onBack={() => setStep(0)}
                         onSave={handleAssignment}
-                        isLocked={isLocked}
+                        isViewMode={isViewMode}
                         onUnlock={() => setShowUnlockModal(true)}
                         selectedService={selectedService}
                     />
