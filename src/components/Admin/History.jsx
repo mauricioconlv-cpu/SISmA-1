@@ -105,7 +105,7 @@ const History = ({ onEdit }) => {
                                 <td className="p-3">{s.fecha}</td>
                                 <td className="p-3 font-bold">
                                     {/* PREFER JOINED DATA */}
-                                    {s.clients?.business_name || s.clients?.name || s.cliente || 'Sin Cliente'}
+                                    {s.clients?.name || s.cliente || 'Sin Cliente'}
                                 </td>
                                 <td className="p-3">
                                     {/* PREFER JOINED DATA for Crane/Vehicle */}
