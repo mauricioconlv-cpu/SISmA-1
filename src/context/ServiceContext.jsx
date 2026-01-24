@@ -176,7 +176,7 @@ export const ServiceProvider = ({ children }) => {
             const serviceToInsert = {
                 // Columnas Fijas que SÍ existen en Supabase
                 folio: newService.folio || getNextFolio(),
-                client_id: validClientId,
+                client_id: validClientId || newService.clientId, // Ensure fallback
                 company_id: validCompanyId, // ENFORCE DATA OWNERSHIP
                 status: 'Activo',
                 service_type: newService.serviceType, // Ensure this is saved
@@ -189,16 +189,16 @@ export const ServiceProvider = ({ children }) => {
 
                 // Columnas JSONB (Aquí adentro va todo lo demás)
                 vehicle_data: vehicle_data || {},
-                assignment_data: assignment_data || {},
-
-                // NEW: Report Data JSONB (to avoid schema errors if columns don't exist)
-                report_data: {
+                // CRITICAL FIX: Merge report data into assignment_data as requested
+                assignment_data: {
+                    ...(assignment_data || {}),
+                    // Merged Report Data
                     nombreReporta: newService.nombreReporta,
-                    telefonoReporta: newService.telefonoAsegurado, // Mapped from state
+                    telefonoReporta: newService.telefonoAsegurado,
                     folioCliente: newService.folioCliente,
                     motivoSolicitud: newService.motivoSolicitud,
                     descripcionServicio: newService.descripcionServicio,
-                    tipoServicio: newService.tipoServicio // Foraneo vs Local
+                    tipoServicio: newService.tipoServicio
                 },
 
                 // Agregamos logs como array vacío
@@ -289,11 +289,29 @@ export const ServiceProvider = ({ children }) => {
             // 3. PREPARAR PAYLOAD LIMPIO
             const serviceToUpdate = {
                 // Campos top-level permitidos
-                client_id: validClientId, // Usamos el ID validado
+                client_id: validClientId || updatedData.clientId, // Ensure fallback
+                status: updatedData.status,
+                service_type: updatedData.serviceType,
+
+                // Address Columns (Flat)
+                origin_address: updatedData.calleOrigen,
+                origin_coords: updatedData.coordsOrigen,
+                destination_address: updatedData.calleDestino,
+                destination_coords: updatedData.coordsDestino,
 
                 // JSONB columns
                 vehicle_data: vehicle_data || {},
-                assignment_data: assignment_data || {},
+                // CRITICAL FIX: Merge report data into assignment_data on update too
+                assignment_data: {
+                    ...(assignment_data || {}),
+                    // Merged Report Data
+                    nombreReporta: updatedData.nombreReporta,
+                    telefonoReporta: updatedData.telefonoAsegurado,
+                    folioCliente: updatedData.folioCliente,
+                    motivoSolicitud: updatedData.motivoSolicitud,
+                    descripcionServicio: updatedData.descripcionServicio,
+                    tipoServicio: updatedData.tipoServicio
+                },
 
                 logs: updatedData.auditLog || []
             };
