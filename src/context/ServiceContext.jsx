@@ -50,6 +50,55 @@ export const ServiceProvider = ({ children }) => {
         }
     }, [services]);
 
+    // --- FETCH SERVICES FROM SUPABASE (Single Source of Truth) ---
+    const fetchServices = async () => {
+        // Enforce Company logic
+        const companyId = user?.company_id || user?.company?.id;
+
+        if (!user || !companyId) {
+            console.log("⏳ Fetch Services delayed: Waiting for User/Company ID...");
+            return;
+        }
+
+        console.log("🔄 Fetching ALL Services for Company:", companyId);
+
+        try {
+            // QUERY REFACTOR: Fetch ALL services for this company, no status filter
+            const { data, error } = await supabase
+                .from('services')
+                .select('*')
+                .eq('company_id', companyId)
+                .order('created_at', { ascending: false }); // Newest first
+
+            if (error) throw error;
+
+            if (data) {
+                console.log(`✅ Loaded ${data.length} services from DB.`);
+                // Merge strategies could go here, but for now, DB is truth
+                // We map to ensure JSON/JSONB fields are objects if they come as null (optional safety)
+                const safeData = data.map(s => ({
+                    ...s,
+                    vehicle_data: s.vehicle_data || {},
+                    assignment_data: s.assignment_data || {},
+                    logs: s.logs || []
+                }));
+                setServices(safeData);
+            }
+        } catch (error) {
+            console.error("❌ Error fetching services:", error);
+        }
+    };
+
+    // Auto-Fetch on mount/user change
+    useEffect(() => {
+        fetchServices();
+
+        // Polling (Optional: every 30s to keep fresh)
+        // const interval = setInterval(fetchServices, 30000);
+        // return () => clearInterval(interval);
+    }, [user?.company_id]); // Re-run when company_id is ready
+
+
     const addService = async (newService) => {
         // 1. Update Local State (Optimistic UI)
         setServices(prev => {
@@ -320,6 +369,7 @@ export const ServiceProvider = ({ children }) => {
             services,
             addService,
             updateService,
+            fetchServices, // Exposed for manual reloads
             getServiceByFolio,
             getNextFolio,
             catalogs,
