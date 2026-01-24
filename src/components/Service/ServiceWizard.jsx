@@ -163,7 +163,8 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 setFolio(serviceData.folio);
 
                 // Restore Selected Service Type
-                const serviceType = SERVICE_TYPES.find(s => s.id === serviceData.serviceType);
+                const serviceTypeId = serviceData.serviceType || serviceData.service_type;
+                const serviceType = SERVICE_TYPES.find(s => s.id === serviceTypeId);
                 if (serviceType) setSelectedService(serviceType);
 
                 // Smart Resume Logic
