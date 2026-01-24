@@ -26,7 +26,7 @@ const History = ({ onEdit }) => {
         const ws = XLSX.utils.json_to_sheet(services);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, "Histórico");
-        XLSX.writeFile(wb, "Historial_Servicios.xlsx");
+        XLSX.writeFile(wb, "PROTEO_Historial_Servicios.xlsx");
     };
 
     return (
