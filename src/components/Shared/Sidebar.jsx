@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, History as HistoryIcon, Package, DollarSign } from 'lucide-react';
+import { Home, Truck, FileText, Settings, LogOut, Users, UserCog, Building2, History as HistoryIcon, Package, DollarSign, Crown } from 'lucide-react';
 import { ROLES } from '../../utils/constants';
 
 // Data-Driven Menu Configuration (The Map)
@@ -68,7 +68,15 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                 </h1>
                 <div className="mt-4 text-xs text-slate-400">
                     <p>Bienvenido,</p>
-                    <p className="font-bold text-white text-sm truncate">{user?.nombre || 'Usuario'}</p>
+                    <div className="flex items-center gap-2">
+                        <p className="font-bold text-white text-sm truncate">{user?.nombre || 'Usuario'}</p>
+                        {isOwner && (
+                            <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
+                                <Crown size={12} className="text-amber-500" />
+                                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Propietario</span>
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
 
