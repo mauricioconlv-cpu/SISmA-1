@@ -419,6 +419,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
         // VALIDATION
         if (!formData.cliente) return alert("El cliente es obligatorio");
 
+        const isParticular = formData.cliente === 'Particular';
         if (!isParticular) {
             if (!formData.folioCliente) return alert("El Folio Cliente es obligatorio para aseguradoras");
             if (!formData.nombreReporta) return alert("El Nombre de quien reporta es obligatorio");
