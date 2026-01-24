@@ -135,7 +135,6 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     clientId: serviceData.client_id || serviceData.clientId,
                     // HYDRATION ENHANCEMENT: Populate client name from join if available
                     cliente: serviceData.clients?.name || serviceData.clients?.business_name || serviceData.cliente || '',
-                    folioCliente: serviceData.folioCliente || '',
 
                     // 2. Addresses (Flat in DB -> State keys)
                     calleOrigen: serviceData.origin_address || serviceData.calleOrigen,

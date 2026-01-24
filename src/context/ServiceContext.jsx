@@ -173,201 +173,202 @@ export const ServiceProvider = ({ children }) => {
                 throw new Error("Error de Integridad: No se ha detectado una empresa asignada a tu sesión. Por favor recarga la página.");
             }
 
-            // Columnas Fijas que SÍ existen en Supabase
-            folio: newService.folio || getNextFolio(),
+            const serviceToInsert = {
+                // Columnas Fijas que SÍ existen en Supabase
+                folio: newService.folio || getNextFolio(),
                 client_id: validClientId,
-                    company_id: validCompanyId, // ENFORCE DATA OWNERSHIP
-                        status: 'Activo',
-                            service_type: newService.serviceType, // Ensure this is saved
+                company_id: validCompanyId, // ENFORCE DATA OWNERSHIP
+                status: 'Activo',
+                service_type: newService.serviceType, // Ensure this is saved
 
-                                // Address Columns (Flat)
-                                origin_address: newService.calleOrigen,
-                                    origin_coords: newService.coordsOrigen,
-                                        destination_address: newService.calleDestino,
-                                            destination_coords: newService.coordsDestino,
+                // Address Columns (Flat)
+                origin_address: newService.calleOrigen,
+                origin_coords: newService.coordsOrigen,
+                destination_address: newService.calleDestino,
+                destination_coords: newService.coordsDestino,
 
-                                                // Columnas JSONB (Aquí adentro va todo lo demás)
-                                                vehicle_data: vehicle_data || {},
-                                                    assignment_data: assignment_data || {},
+                // Columnas JSONB (Aquí adentro va todo lo demás)
+                vehicle_data: vehicle_data || {},
+                assignment_data: assignment_data || {},
 
-                                                        // NEW: Report Data JSONB (to avoid schema errors if columns don't exist)
-                                                        report_data: {
-                nombreReporta: newService.nombreReporta,
+                // NEW: Report Data JSONB (to avoid schema errors if columns don't exist)
+                report_data: {
+                    nombreReporta: newService.nombreReporta,
                     telefonoReporta: newService.telefonoAsegurado, // Mapped from state
-                        folioCliente: newService.folioCliente,
-                            motivoSolicitud: newService.motivoSolicitud,
-                                descripcionServicio: newService.descripcionServicio,
-                                    tipoServicio: newService.tipoServicio // Foraneo vs Local
-            },
+                    folioCliente: newService.folioCliente,
+                    motivoSolicitud: newService.motivoSolicitud,
+                    descripcionServicio: newService.descripcionServicio,
+                    tipoServicio: newService.tipoServicio // Foraneo vs Local
+                },
 
-            // Agregamos logs como array vacío
-            logs: []
-        };
+                // Agregamos logs como array vacío
+                logs: []
+            };
 
-        // ASEGURAR QUE NO ENVIAMOS ID (para que Supabase lo genere)
-        delete serviceToInsert.id;
+            // ASEGURAR QUE NO ENVIAMOS ID (para que Supabase lo genere)
+            delete serviceToInsert.id;
 
-        console.log("Payload LIMPIO enviado a Supabase:", serviceToInsert);
+            console.log("Payload LIMPIO enviado a Supabase:", serviceToInsert);
 
-        const { data, error } = await supabase
-            .from('services')
-            .insert([serviceToInsert])
-            .select();
+            const { data, error } = await supabase
+                .from('services')
+                .insert([serviceToInsert])
+                .select();
 
-        if (error) {
-            console.error("Error DETALLADO de Supabase:", error.message, error.details);
-            throw error;
-        }
-        return data;
-    } catch (error) {
-        console.error("Fallo crítico al guardar en DB:", error);
-        // Re-throw so the UI knows it failed
-        throw error;
-    }
-};
-
-const updateService = async (folio, updatedData) => {
-    // 1. Update Local State
-    setServices(prev => prev.map(service =>
-        service.folio === folio ? { ...service, ...updatedData } : service
-    ));
-
-    // 2. Persist to Supabase
-    try {
-        // Construct JSONB objects for update
-        const vehicle_data = {
-            vehiculo: updatedData.vehiculo,
-            marca: updatedData.marca,
-            submarca: updatedData.submarca,
-            placas: updatedData.placas,
-            color: updatedData.color,
-            descripcionDanios: updatedData.descripcionDanios,
-            fotosDanios: updatedData.fotosDanios,
-            tipoFalla: updatedData.tipoFalla,
-            especifiqueFalla: updatedData.especifiqueFalla,
-            maniobra: {
-                vehiculoEnNeutral: updatedData.vehiculoEnNeutral,
-                tipoTransmision: updatedData.tipoTransmision,
-                llantasGiran: updatedData.llantasGiran,
-                volanteGira: updatedData.volanteGira,
-                vehiculoPieCalle: updatedData.vehiculoPieCalle,
-                ubicacionDetalle: updatedData.ubicacionDetalle,
-                tipoGarage: updatedData.tipoGarage,
-                nivelEstacionamiento: updatedData.nivelEstacionamiento,
-                tipoRampa: updatedData.tipoRampa,
-                alturaEstacionamiento: updatedData.alturaEstacionamiento,
-                fotosManiobra: updatedData.fotosManiobra
+            if (error) {
+                console.error("Error DETALLADO de Supabase:", error.message, error.details);
+                throw error;
             }
-        };
-
-        const assignment_data = {
-            grua: updatedData.grua,
-            operador: updatedData.operador,
-            tiempoArribo: updatedData.tiempoArribo,
-            horaAsignacion: updatedData.horaAsignacion,
-            horaArribo: updatedData.horaArribo,
-            horaContacto: updatedData.horaContacto,
-            horaTermino: updatedData.horaTermino,
-            craneCoords: updatedData.craneCoords,
-            odometer: updatedData.odometer,
-            totalDistanceKm: updatedData.totalDistanceKm,
-            estimatedFinalOdometer: updatedData.estimatedFinalOdometer
-        };
-
-        const financial_data = {
-            quotation: updatedData.quotation,
-            billableDistance: updatedData.billableDistance
-        };
-
-        // --- VALIDACIÓN CORREGIDA PARA UPDATE ---
-
-        let validClientId = updatedData.clientId;
-
-        // NOTE: Removed legacy hardcoded CLIENTE_1 logic.
-
-        // 3. PREPARAR PAYLOAD LIMPIO
-        const serviceToUpdate = {
-            // Campos top-level permitidos
-            client_id: validClientId, // Usamos el ID validado
-
-            // JSONB columns
-            vehicle_data: vehicle_data || {},
-            assignment_data: assignment_data || {},
-
-            logs: updatedData.auditLog || []
-        };
-
-        // Ya no necesitamos borrar claves manualmente porque construimos el objeto limpio desde cero
-
-        const { data, error } = await supabase
-            .from('services')
-            .update(serviceToUpdate)
-            .eq('folio', folio)
-            .select();
-
-        if (error) {
-            console.error("Error al actualizar en Supabase:", error);
+            return data;
+        } catch (error) {
+            console.error("Fallo crítico al guardar en DB:", error);
+            // Re-throw so the UI knows it failed
             throw error;
         }
-        return data;
-    } catch (error) {
-        console.error("Fallo crítico al actualizar en DB:", error);
-        throw error;
-    }
-};
+    };
 
-const getServiceByFolio = (folio) => {
-    return services.find(s => s.folio === folio);
-};
+    const updateService = async (folio, updatedData) => {
+        // 1. Update Local State
+        setServices(prev => prev.map(service =>
+            service.folio === folio ? { ...service, ...updatedData } : service
+        ));
 
-const getNextFolio = () => {
-    if (services.length === 0) return 1001;
-    const maxFolio = Math.max(...services.map(s => parseInt(s.folio) || 0));
-    return maxFolio + 1;
-};
+        // 2. Persist to Supabase
+        try {
+            // Construct JSONB objects for update
+            const vehicle_data = {
+                vehiculo: updatedData.vehiculo,
+                marca: updatedData.marca,
+                submarca: updatedData.submarca,
+                placas: updatedData.placas,
+                color: updatedData.color,
+                descripcionDanios: updatedData.descripcionDanios,
+                fotosDanios: updatedData.fotosDanios,
+                tipoFalla: updatedData.tipoFalla,
+                especifiqueFalla: updatedData.especifiqueFalla,
+                maniobra: {
+                    vehiculoEnNeutral: updatedData.vehiculoEnNeutral,
+                    tipoTransmision: updatedData.tipoTransmision,
+                    llantasGiran: updatedData.llantasGiran,
+                    volanteGira: updatedData.volanteGira,
+                    vehiculoPieCalle: updatedData.vehiculoPieCalle,
+                    ubicacionDetalle: updatedData.ubicacionDetalle,
+                    tipoGarage: updatedData.tipoGarage,
+                    nivelEstacionamiento: updatedData.nivelEstacionamiento,
+                    tipoRampa: updatedData.tipoRampa,
+                    alturaEstacionamiento: updatedData.alturaEstacionamiento,
+                    fotosManiobra: updatedData.fotosManiobra
+                }
+            };
 
-// --- CATALOGS STATE ---
-const defaultCatalogs = {
-    vehicleTypes: ['Sedán', 'Hatchback', 'SUV', 'Pick-up', 'Van', 'Motocicleta', 'Camión 3.5', 'Camión Rabón'],
-    vehicleBrands: ['Ford', 'Chevrolet', 'Nissan', 'Toyota', 'Volkswagen', 'Honda', 'Mazda', 'Hyundai', 'Kia', 'BMW', 'Mercedes-Benz'],
-    colors: ['Blanco', 'Negro', 'Plata', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Naranja', 'Café', 'Beige'],
-    extraCharges: ['Maniobra Especial', 'Abanderamiento', 'Tiempo de Espera', 'Pensión', 'Custodia', 'Dollys']
-};
+            const assignment_data = {
+                grua: updatedData.grua,
+                operador: updatedData.operador,
+                tiempoArribo: updatedData.tiempoArribo,
+                horaAsignacion: updatedData.horaAsignacion,
+                horaArribo: updatedData.horaArribo,
+                horaContacto: updatedData.horaContacto,
+                horaTermino: updatedData.horaTermino,
+                craneCoords: updatedData.craneCoords,
+                odometer: updatedData.odometer,
+                totalDistanceKm: updatedData.totalDistanceKm,
+                estimatedFinalOdometer: updatedData.estimatedFinalOdometer
+            };
 
-const [catalogs, setCatalogs] = useState(() => {
-    try {
-        const saved = localStorage.getItem('towing_catalogs');
-        return saved ? { ...defaultCatalogs, ...JSON.parse(saved) } : defaultCatalogs;
-    } catch (error) {
-        console.error("Error loading catalogs", error);
-        return defaultCatalogs;
-    }
-});
+            const financial_data = {
+                quotation: updatedData.quotation,
+                billableDistance: updatedData.billableDistance
+            };
 
-useEffect(() => {
-    try {
-        localStorage.setItem('towing_catalogs', JSON.stringify(catalogs));
-    } catch (error) {
-        console.error("Error saving catalogs", error);
-    }
-}, [catalogs]);
+            // --- VALIDACIÓN CORREGIDA PARA UPDATE ---
 
-const updateCatalogs = (newCatalogs) => {
-    setCatalogs(newCatalogs);
-};
+            let validClientId = updatedData.clientId;
 
-return (
-    <ServiceContext.Provider value={{
-        services,
-        addService,
-        updateService,
-        fetchServices, // Exposed for manual reloads
-        getServiceByFolio,
-        getNextFolio,
-        catalogs,
-        updateCatalogs
-    }}>
-        {children}
-    </ServiceContext.Provider>
-);
+            // NOTE: Removed legacy hardcoded CLIENTE_1 logic.
+
+            // 3. PREPARAR PAYLOAD LIMPIO
+            const serviceToUpdate = {
+                // Campos top-level permitidos
+                client_id: validClientId, // Usamos el ID validado
+
+                // JSONB columns
+                vehicle_data: vehicle_data || {},
+                assignment_data: assignment_data || {},
+
+                logs: updatedData.auditLog || []
+            };
+
+            // Ya no necesitamos borrar claves manualmente porque construimos el objeto limpio desde cero
+
+            const { data, error } = await supabase
+                .from('services')
+                .update(serviceToUpdate)
+                .eq('folio', folio)
+                .select();
+
+            if (error) {
+                console.error("Error al actualizar en Supabase:", error);
+                throw error;
+            }
+            return data;
+        } catch (error) {
+            console.error("Fallo crítico al actualizar en DB:", error);
+            throw error;
+        }
+    };
+
+    const getServiceByFolio = (folio) => {
+        return services.find(s => s.folio === folio);
+    };
+
+    const getNextFolio = () => {
+        if (services.length === 0) return 1001;
+        const maxFolio = Math.max(...services.map(s => parseInt(s.folio) || 0));
+        return maxFolio + 1;
+    };
+
+    // --- CATALOGS STATE ---
+    const defaultCatalogs = {
+        vehicleTypes: ['Sedán', 'Hatchback', 'SUV', 'Pick-up', 'Van', 'Motocicleta', 'Camión 3.5', 'Camión Rabón'],
+        vehicleBrands: ['Ford', 'Chevrolet', 'Nissan', 'Toyota', 'Volkswagen', 'Honda', 'Mazda', 'Hyundai', 'Kia', 'BMW', 'Mercedes-Benz'],
+        colors: ['Blanco', 'Negro', 'Plata', 'Gris', 'Rojo', 'Azul', 'Verde', 'Amarillo', 'Naranja', 'Café', 'Beige'],
+        extraCharges: ['Maniobra Especial', 'Abanderamiento', 'Tiempo de Espera', 'Pensión', 'Custodia', 'Dollys']
+    };
+
+    const [catalogs, setCatalogs] = useState(() => {
+        try {
+            const saved = localStorage.getItem('towing_catalogs');
+            return saved ? { ...defaultCatalogs, ...JSON.parse(saved) } : defaultCatalogs;
+        } catch (error) {
+            console.error("Error loading catalogs", error);
+            return defaultCatalogs;
+        }
+    });
+
+    useEffect(() => {
+        try {
+            localStorage.setItem('towing_catalogs', JSON.stringify(catalogs));
+        } catch (error) {
+            console.error("Error saving catalogs", error);
+        }
+    }, [catalogs]);
+
+    const updateCatalogs = (newCatalogs) => {
+        setCatalogs(newCatalogs);
+    };
+
+    return (
+        <ServiceContext.Provider value={{
+            services,
+            addService,
+            updateService,
+            fetchServices, // Exposed for manual reloads
+            getServiceByFolio,
+            getNextFolio,
+            catalogs,
+            updateCatalogs
+        }}>
+            {children}
+        </ServiceContext.Provider>
+    );
 };
