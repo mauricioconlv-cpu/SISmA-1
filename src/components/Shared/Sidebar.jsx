@@ -69,7 +69,9 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                 <div className="mt-4 text-xs text-slate-400">
                     <p>Bienvenido,</p>
                     <div className="flex items-center gap-2">
-                        <p className="font-bold text-white text-sm truncate">{user?.nombre || 'Usuario'}</p>
+                        <p className="font-bold text-white text-sm truncate">
+                            {user?.user_metadata?.full_name || user?.user_metadata?.first_name || user?.nombre || 'Usuario'}
+                        </p>
                         {isOwner && (
                             <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                                 <Crown size={12} className="text-amber-500" />

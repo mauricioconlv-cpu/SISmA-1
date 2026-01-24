@@ -41,7 +41,8 @@ export const AuthProvider = ({ children }) => {
             auth_id: supabaseUser.id,
             isAuthenticated: true,
             role: ROLES.OPERATOR, // Default safe role
-            rol: ROLES.OPERATOR   // Default safe rol
+            rol: ROLES.OPERATOR,   // Default safe rol
+            user_metadata: supabaseUser.user_metadata // Include metadata
         };
 
         try {
