@@ -25,6 +25,7 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     const activeModuleKeys = new Set(rawModules);
 
     const isOwner = user?.role === 'owner' || user?.rol === 'owner';
+    const isCompanyAdmin = user?.role === 'company_admin' || user?.rol === 'company_admin';
     const isSuperAdmin = user?.role === 'superadmin' || user?.rol === 'superadmin';
     const isAdmin = user?.role === 'admin' || user?.rol === 'admin';
 
@@ -34,13 +35,13 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
     // 1. Dashboard (Always Visible)
     menuItems.push({ id: 'dashboard', label: 'Inicio', Icon: Home });
 
-    // 2. Core Management (Visible for Owners/Admins/SuperAdmins) - NO MODULE REQUIRED
-    if (isOwner || isAdmin || isSuperAdmin) {
+    // 2. Core Management (Visible for Owners/Admins/SuperAdmins/CompanyAdmins) - NO MODULE REQUIRED
+    if (isOwner || isCompanyAdmin || isAdmin || isSuperAdmin) {
         menuItems.push({ id: 'client-management', label: 'Clientes y Tarifas', Icon: DollarSign });
     }
 
-    // 3. Dynamic Modules (LEGO) - Owners see active modules, SuperAdmins see EVERYTHING for Demos
-    if (isOwner || isSuperAdmin) {
+    // 3. Dynamic Modules (LEGO) - Owners/CompanyAdmins see active, SuperAdmins see ALL
+    if (isOwner || isCompanyAdmin || isSuperAdmin) {
         // We iterate through the defined MAP to preserve order
         Object.keys(MODULE_MENU_MAP).forEach(key => {
             // Check if user has this module active OR if they are SuperAdmin (Demo Mode)
