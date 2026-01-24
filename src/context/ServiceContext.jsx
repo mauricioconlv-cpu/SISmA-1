@@ -60,9 +60,10 @@ export const ServiceProvider = ({ children }) => {
 
         try {
             // QUERY REFACTOR: Fetch ALL services for this company, no status filter
+            // JOIN UPDATE: Bringing full objects for Client and Crane (Vehicle)
             const { data, error } = await supabase
                 .from('services')
-                .select('*')
+                .select('*, clients(name, business_name), vehicles(model, plate)')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false }); // Newest first
 

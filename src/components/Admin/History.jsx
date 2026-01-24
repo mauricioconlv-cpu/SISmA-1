@@ -103,8 +103,23 @@ const History = ({ onEdit }) => {
                                     {s.folio}
                                 </td>
                                 <td className="p-3">{s.fecha}</td>
-                                <td className="p-3 font-bold">{s.cliente}</td>
-                                <td className="p-3">{s.vehiculo} <span className="text-xs text-gray-500">({s.placas})</span></td>
+                                <td className="p-3 font-bold">
+                                    {/* PREFER JOINED DATA */}
+                                    {s.clients?.business_name || s.clients?.name || s.cliente || 'Sin Cliente'}
+                                </td>
+                                <td className="p-3">
+                                    {/* PREFER JOINED DATA for Crane/Vehicle */}
+                                    {s.vehicles?.model ? (
+                                        <>
+                                            {s.vehicles.model}
+                                            <span className="text-xs text-gray-500 ml-1">({s.vehicles.plate || s.placas})</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            {s.vehiculo || 'N/A'} <span className="text-xs text-gray-500">({s.placas})</span>
+                                        </>
+                                    )}
+                                </td>
                                 <td className="p-3 truncate max-w-[150px]" title={s.calleOrigen}>{s.calleOrigen}</td>
                                 <td className="p-3 truncate max-w-[150px]" title={s.calleDestino}>{s.calleDestino}</td>
                                 <td className="p-3">
