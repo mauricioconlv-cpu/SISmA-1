@@ -109,10 +109,10 @@ const History = ({ onEdit }) => {
                                 </td>
                                 <td className="p-3">
                                     {/* PREFER JOINED DATA for Crane/Vehicle */}
-                                    {s.vehicles?.model ? (
+                                    {s.vehicles?.brand ? (
                                         <>
-                                            {s.vehicles.model}
-                                            <span className="text-xs text-gray-500 ml-1">({s.vehicles.plate || s.placas})</span>
+                                            {s.vehicles.brand} {s.vehicles.economic_number ? `#${s.vehicles.economic_number}` : ''}
+                                            <span className="text-xs text-gray-500 ml-1">({s.vehicles.plates || s.placas})</span>
                                         </>
                                     ) : (
                                         <>

@@ -63,7 +63,7 @@ export const ServiceProvider = ({ children }) => {
             // JOIN UPDATE: Bringing full objects for Client and Crane (Vehicle)
             const { data, error } = await supabase
                 .from('services')
-                .select('*, clients(name), vehicles(model, plate)')
+                .select('*, clients(name), vehicles(brand, plates, economic_number)')
                 .eq('company_id', companyId)
                 .order('created_at', { ascending: false }); // Newest first
 
