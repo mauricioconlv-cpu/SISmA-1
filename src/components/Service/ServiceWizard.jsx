@@ -303,8 +303,9 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
     };
 
     const handleClientChange = (e) => {
-        const selectedId = parseInt(e.target.value);
-        const selectedClient = clients.find(c => c.id === selectedId);
+        // CORRECTION: IDs are UUID strings, not integers. DO NOT PARSE INT.
+        const selectedId = e.target.value;
+        const selectedClient = clients.find(c => String(c.id) === String(selectedId));
 
         setFormData(prev => ({
             ...prev,
@@ -418,10 +419,11 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
         // VALIDATION
         if (!formData.cliente) return alert("El cliente es obligatorio");
 
-        const isParticular = formData.cliente === 'Particular';
         if (!isParticular) {
             if (!formData.folioCliente) return alert("El Folio Cliente es obligatorio para aseguradoras");
             if (!formData.nombreReporta) return alert("El Nombre de quien reporta es obligatorio");
+            // VALIDATION: Ensure clientId is present for non-particular
+            if (!formData.clientId) return alert("Error: No se ha seleccionado un cliente válido (ID perdido).");
         }
 
         if (selectedService.category === 'vehicular') {
@@ -443,10 +445,10 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
             category: selectedService.category,
             horaAsignacion: formData.horaAsignacion || new Date().toLocaleString(),
             folio: folio,
-            // REDUNDANT SAFETY: Force UUIDs here too
-            clientId: formData.clientId || '00000000-0000-0000-0000-000000000000',
-            companyId: formData.companyId || user?.companyId || '00000000-0000-0000-0000-000000000000',
-
+            // STRICT VALIDATION: Do not use fallbacks for IDs.
+            // If they are null here, let it fail or be caught by validation above.
+            clientId: formData.clientId,
+            companyId: formData.companyId || user?.companyId, // Ensure this exists or context provides it
         };
 
         setFormData(prev => ({

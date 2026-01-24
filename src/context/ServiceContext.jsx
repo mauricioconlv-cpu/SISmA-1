@@ -23,10 +23,6 @@ export const useServices = () => {
     return context;
 };
 
-// CONSTANTE ID CLIENTE 1
-const CLIENTE_1_EMAIL = 'gruaslafundicion@gmail.com';
-const CLIENTE_1_ID = 'cliente_01'; // O el UUID real si lo tuviéramos
-
 export const ServiceProvider = ({ children }) => {
     const { user } = useAuth(); // Accedemos al usuario actual
 
@@ -157,25 +153,16 @@ export const ServiceProvider = ({ children }) => {
                 billableDistance: newService.billableDistance
             };
 
-            // --- VALIDACIÓN CORREGIDA (VERSIÓN FINAL) ---
-            const DUMMY_UUID = '00000000-0000-0000-0000-000000000000';
+            // --- VALIDACIÓN DE CLIENT_ID ---
+            let validClientId = newService.client_id;
 
-            let validClientId = newService.clientId;
+            // Ensure validClientId is not explicitly null/undefined/empty string if we want to enforce it
+            // However, the ServiceWizard should have enforced it already.
+            // We just ensure it's not overriding valid data.
 
-            // LÓGICA ESPECIAL CLIENTE 1
-            if (user && user.email === CLIENTE_1_EMAIL) {
-                console.info("🔒 Detectado Cliente 1. Forzando client_id de La Fundición.");
-                validClientId = CLIENTE_1_ID;
-            }
+            // NOTE: Removed legacy hardcoded CLIENTE_1 logic as per request.
+            // Also removed DUMMY_UUID fallback to force real UUIDs or fail (catch invalid input type).
 
-            // TRUCO: Convertimos a String() para poder medir el largo aunque sea un número
-            if (!validClientId || String(validClientId).length < 2) { // Bajé la validación de largo 30 a 2 para permitir 'cliente_01'
-                // Si NO es cliente 1 y el ID es inválido, usamos Dummy
-                if (validClientId !== CLIENTE_1_ID) {
-                    console.warn("⚠️ ID inválido corregido automáticamente. Usando Dummy.");
-                    validClientId = DUMMY_UUID;
-                }
-            }
 
             // --- VALIDACIÓN CRÍTICA COMPANY_ID ---
             const validCompanyId = user?.company_id || user?.company?.id;
@@ -276,22 +263,10 @@ export const ServiceProvider = ({ children }) => {
             };
 
             // --- VALIDACIÓN CORREGIDA PARA UPDATE ---
-            const DUMMY_UUID = '00000000-0000-0000-0000-000000000000';
 
             let validClientId = updatedData.clientId;
 
-            // LÓGICA ESPECIAL CLIENTE 1 (También en Update para asegurar integridad)
-            if (user && user.email === CLIENTE_1_EMAIL) {
-                validClientId = CLIENTE_1_ID;
-            }
-
-            // TRUCO: Convertimos a String() para poder medir el largo aunque sea un número
-            if (!validClientId || String(validClientId).length < 2) {
-                if (validClientId !== CLIENTE_1_ID) {
-                    console.warn("⚠️ ID inválido en UPDATE corregido automáticamente. Usando Dummy.");
-                    validClientId = DUMMY_UUID;
-                }
-            }
+            // NOTE: Removed legacy hardcoded CLIENTE_1 logic.
 
             // 3. PREPARAR PAYLOAD LIMPIO
             const serviceToUpdate = {
