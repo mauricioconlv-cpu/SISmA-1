@@ -287,11 +287,12 @@ export const ServiceProvider = ({ children }) => {
             // NOTE: Removed legacy hardcoded CLIENTE_1 logic.
 
             // 3. PREPARAR PAYLOAD LIMPIO
+            // 3. PREPARAR PAYLOAD LIMPIO
             const serviceToUpdate = {
                 // Campos top-level permitidos
                 client_id: validClientId || updatedData.clientId, // Ensure fallback
                 status: updatedData.status,
-                service_type: updatedData.serviceType,
+                // REMOVED: service_type from root
 
                 // Address Columns (Flat)
                 origin_address: updatedData.calleOrigen,
@@ -304,6 +305,7 @@ export const ServiceProvider = ({ children }) => {
                 // CRITICAL FIX: Merge report data into assignment_data on update too
                 assignment_data: {
                     ...(assignment_data || {}),
+                    service_type: updatedData.serviceType, // Moved here
                     // Merged Report Data
                     nombreReporta: updatedData.nombreReporta,
                     telefonoReporta: updatedData.telefonoAsegurado,
