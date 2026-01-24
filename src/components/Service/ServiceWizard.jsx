@@ -145,7 +145,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     // 3. Vehicle Data (JSON -> Flat State keys)
                     vehiculo: serviceData.vehicle_data?.vehiculo || serviceData.vehicle_data?.type || '',
                     marca: serviceData.vehicle_data?.marca || serviceData.vehicle_data?.brand || '',
-                    submarca: serviceData.vehicle_data?.submarca || '',
+                    submarca: serviceData.vehicle_data?.submarca || serviceData.vehicle_data?.model || '',
                     placas: serviceData.vehicle_data?.placas || serviceData.vehicle_data?.plates || '',
                     color: serviceData.vehicle_data?.color || '',
                     descripcionDanios: serviceData.vehicle_data?.descripcionDanios || '',
@@ -160,13 +160,13 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                     grua: serviceData.assignment_data?.grua || '',
                     operador: serviceData.assignment_data?.operador || '',
 
-                    // 6. Report Data (JSON -> Flat State keys)
-                    nombreReporta: serviceData.report_data?.nombreReporta || '',
-                    telefonoAsegurado: serviceData.report_data?.telefonoReporta || '',
-                    folioCliente: serviceData.report_data?.folioCliente || '',
-                    motivoSolicitud: serviceData.report_data?.motivoSolicitud || '',
-                    descripcionServicio: serviceData.report_data?.descripcionServicio || '',
-                    tipoServicio: serviceData.report_data?.tipoServicio || 'Local',
+                    // 6. Report Data (Correctly Mapped from assignment_data as requested)
+                    nombreReporta: serviceData.report_data?.nombreReporta || serviceData.assignment_data?.nombreReporta || serviceData.assignment_data?.report_name || '',
+                    telefonoAsegurado: serviceData.report_data?.telefonoReporta || serviceData.assignment_data?.telefonoReporta || serviceData.assignment_data?.report_phone || '',
+                    folioCliente: serviceData.report_data?.folioCliente || serviceData.assignment_data?.folioCliente || '',
+                    motivoSolicitud: serviceData.report_data?.motivoSolicitud || serviceData.assignment_data?.motivoSolicitud || '',
+                    descripcionServicio: serviceData.report_data?.descripcionServicio || serviceData.assignment_data?.descripcionServicio || '',
+                    tipoServicio: serviceData.report_data?.tipoServicio || serviceData.assignment_data?.tipoServicio || 'Local',
                 };
 
                 // Force Lock on Load (Read-Only Default)
@@ -176,7 +176,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
                 setFolio(serviceData.folio);
 
                 // Restore Selected Service Type
-                const serviceTypeId = serviceData.serviceType || serviceData.service_type;
+                const serviceTypeId = serviceData.serviceType || serviceData.service_type || serviceData.assignment_data?.service_type;
                 const serviceType = SERVICE_TYPES.find(s => s.id === serviceTypeId);
                 if (serviceType) setSelectedService(serviceType);
 
