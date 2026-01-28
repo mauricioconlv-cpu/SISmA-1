@@ -11,6 +11,18 @@ const TeamManagement = () => {
     const [showModal, setShowModal] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
 
+    const [formData, setFormData] = useState({
+        name: '',
+        crane_type: 'Plataforma',
+        additional_tools: [],
+        typification: 'Grúa Tipo A',
+        brand: '',
+        color: '',
+        economic_number: '',
+        plates: '',
+        is_federal: false
+    });
+
     // --- TAB STATE ---
     const [activeTab, setActiveTab] = useState('vehicles'); // 'vehicles' | 'staff'
     const [staff, setStaff] = useState([]);
