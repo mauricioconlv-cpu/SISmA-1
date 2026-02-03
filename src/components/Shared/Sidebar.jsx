@@ -73,10 +73,23 @@ const Sidebar = ({ user, activeTab, onTabChange, onLogout }) => {
                         <p className="font-bold text-white text-sm truncate">
                             {user?.user_metadata?.full_name || user?.user_metadata?.first_name || user?.nombre || 'Usuario'}
                         </p>
-                        {isOwner && (
+                        {isOwner ? (
                             <div className="flex items-center gap-1 bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full">
                                 <Crown size={12} className="text-amber-500" />
                                 <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">Propietario</span>
+                            </div>
+                        ) : isCompanyAdmin ? (
+                            <div className="flex items-center gap-1 bg-blue-500/10 border border-blue-500/20 px-2 py-0.5 rounded-full">
+                                <Building2 size={12} className="text-blue-500" />
+                                <span className="text-[10px] font-bold text-blue-500 uppercase tracking-wider">
+                                    {user?.company?.name || 'Administrador'}
+                                </span>
+                            </div>
+                        ) : (
+                            <div className="flex items-center gap-1 bg-slate-700 border border-slate-600 px-2 py-0.5 rounded-full">
+                                <span className="text-[10px] font-bold text-slate-300 uppercase tracking-wider">
+                                    {user?.role || user?.rol || 'Operador'}
+                                </span>
                             </div>
                         )}
                     </div>

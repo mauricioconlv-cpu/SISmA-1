@@ -154,12 +154,12 @@ const PlatformCompanies = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    nombre: 'Admin ' + name, // Default owner name
+                    param_nombre: 'Admin ' + name, // Default owner name
                     email: email,
                     password: password,
-                    rol: 'owner', // Special role for company creator
+                    rol: 'company_admin', // CORRECTED ROLE: Company Admins are NOT owners
                     company_id: company.id,
-                    permissions: ['all'] // Owners get all permissions by default
+                    permissions: ['all'] // Admins get all permissions by default
                 })
             });
 
