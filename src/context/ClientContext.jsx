@@ -19,6 +19,7 @@ export const ClientProvider = ({ children }) => {
             let query = supabase.from('clients')
                 .select('*')
                 .eq('company_id', user.company_id)
+                .is('deleted_at', null) // SOFT DELETE FILTER
                 .order('name');
             const { data: clientsData, error: clientsError } = await query;
 
@@ -146,9 +147,10 @@ export const ClientProvider = ({ children }) => {
         if (!window.confirm("¿Seguro que desea eliminar este cliente?")) return;
 
         try {
+            // SOFT DELETE IMPLEMENTATION
             const { error } = await supabase
                 .from('clients')
-                .delete()
+                .update({ deleted_at: new Date() })
                 .eq('id', id);
 
             if (error) throw error;
