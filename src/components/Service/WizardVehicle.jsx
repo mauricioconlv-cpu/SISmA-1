@@ -4,6 +4,10 @@ import { InputGroup, SectionTitle, StyledInput, StyledSelect, StyledTextArea } f
 import { COLORES, MARCAS_MX } from '../../utils/constants';
 
 const WizardVehicle = ({ formData, handleChange, isLocked }) => {
+    // GENERATE YEARS (2028 down to 1970)
+    const currentYear = 2028;
+    const years = Array.from({ length: currentYear - 1969 }, (_, i) => currentYear - i);
+
     return (
         <>
             <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-100">
@@ -28,6 +32,15 @@ const WizardVehicle = ({ formData, handleChange, isLocked }) => {
                     <InputGroup label="Vehículo *" required>
                         <StyledInput name="vehiculo" value={formData.vehiculo} onChange={handleChange} disabled={isLocked} />
                     </InputGroup>
+
+                    {/* NEW FIELD: YEAR */}
+                    <InputGroup label="Año Modelo *" required>
+                        <StyledSelect name="vehicle_year" value={formData.vehicle_year || ''} onChange={handleChange} disabled={isLocked}>
+                            <option value="">-- Año --</option>
+                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                        </StyledSelect>
+                    </InputGroup>
+
                     <InputGroup label="Marca">
                         <StyledSelect name="marca" value={formData.marca} onChange={handleChange} disabled={isLocked}>
                             <option value="">-- Seleccione --</option>

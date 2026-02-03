@@ -112,6 +112,7 @@ export const ServiceProvider = ({ children }) => {
             // SHIELDING: Ensure these are objects, even if empty
             const vehicle_data = {
                 vehiculo: newService.vehiculo,
+                year: newService.vehicle_year, // Store in JSON too
                 marca: newService.marca,
                 submarca: newService.submarca,
                 placas: newService.placas,
@@ -179,6 +180,7 @@ export const ServiceProvider = ({ children }) => {
                 client_id: validClientId || newService.clientId, // Ensure fallback
                 company_id: validCompanyId, // ENFORCE DATA OWNERSHIP
                 status: 'Activo',
+                vehicle_year: newService.vehicle_year ? parseInt(newService.vehicle_year) : null, // NEW COLUMN
                 service_type: newService.serviceType, // Ensure this is saved
 
                 // Address Columns (Flat)
@@ -242,6 +244,7 @@ export const ServiceProvider = ({ children }) => {
             // Construct JSONB objects for update
             const vehicle_data = {
                 vehiculo: updatedData.vehiculo,
+                year: updatedData.vehicle_year, // Store in JSON too
                 marca: updatedData.marca,
                 submarca: updatedData.submarca,
                 placas: updatedData.placas,
@@ -296,6 +299,7 @@ export const ServiceProvider = ({ children }) => {
                 // Campos top-level permitidos
                 client_id: validClientId || updatedData.clientId, // Ensure fallback
                 status: updatedData.status,
+                vehicle_year: updatedData.vehicle_year ? parseInt(updatedData.vehicle_year) : null, // NEW COLUMN
                 // REMOVED: service_type from root
 
                 // Address Columns (Flat)

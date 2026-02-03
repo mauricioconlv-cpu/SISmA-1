@@ -163,6 +163,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
 
                     // 3. Vehicle Data (JSON -> Flat State keys)
                     vehiculo: serviceData.vehicle_data?.vehiculo || serviceData.vehicle_data?.type || '',
+                    vehicle_year: serviceData.vehicle_year || serviceData.vehicle_data?.year || '', // Hydrate Year
                     marca: serviceData.vehicle_data?.marca || serviceData.vehicle_data?.brand || '',
                     submarca: serviceData.vehicle_data?.submarca || serviceData.vehicle_data?.model || '',
                     placas: serviceData.vehicle_data?.placas || serviceData.vehicle_data?.plates || '',
@@ -236,6 +237,7 @@ const ServiceWizard = ({ user, config, onSave, nextFolio, serviceId }) => {
 
         // Vehículo
         vehiculo: '',
+        vehicle_year: '',
         marca: '',
         submarca: '',
         placas: '',
