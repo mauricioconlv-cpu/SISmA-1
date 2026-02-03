@@ -87,14 +87,18 @@ export const ClientProvider = ({ children }) => {
 
     const addClient = async (clientData) => {
         try {
-            if (!user?.company_id && user?.role !== ROLES.SUPERADMIN) {
-                alert("Error: No tienes una empresa asignada.");
+            // STRICT VALIDATION: Company ID is mandatory for Data Ownership
+            const targetCompanyId = user?.company_id || user?.companyId;
+
+            if (!targetCompanyId && user?.role !== ROLES.SUPERADMIN) {
+                console.error("FATAL: User has no company_id assigned. Cannot create client.");
+                alert("Error Crítico: Su usuario no tiene una empresa asignada. Contacte a soporte.");
                 return;
             }
 
             // Prepare payload
             const newClientPayload = {
-                company_id: user.company_id, // RLS requires this (or policy check)
+                company_id: targetCompanyId, // CRITICAL: Must be populated
                 name: clientData.name,
                 rfc: clientData.rfc,
                 address: clientData.address,
