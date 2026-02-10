@@ -136,49 +136,35 @@ const PlatformCompanies = () => {
             return alert("La contraseña provisional es obligatoria.");
         }
 
-        // 1. Create Company
-        const { data: company, error } = await supabase
-            .from('companies')
-            .insert([{ name, email, enabled_services: ['tow'] }]) // Default service
-            .select()
-            .single();
-
-        if (error) {
-            alert("Error creando empresa: " + error.message);
-            return;
-        }
-
-        // 2. Create Owner User (via Backend API)
+        // ATOMIC CREATION: Call the new API that handles everything
         try {
-            const response = await fetch('/api/createUser', {
+            const response = await fetch('/api/createTenant', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    param_nombre: 'Admin ' + name, // Default owner name
+                    company_name: name,
                     email: email,
                     password: password,
-                    rol: 'company_admin', // CORRECTED ROLE: Company Admins are NOT owners
-                    company_id: company.id,
-                    permissions: ['all'] // Admins get all permissions by default
+                    owner_name: 'Admin ' + name
                 })
             });
 
             const result = await response.json();
 
             if (!response.ok) {
-                console.error("User creation failed:", result);
-                alert(`Empresa creada, PERO hubo un error creando el usuario dueño: ${result.error}. Deberás crearlo manualmente en Gestión de Usuarios.`);
-            } else {
-                alert(`✅ Empresa "${name}" y usuario dueño creados exitosamente.\n\nEmail: ${email}\nPassword: ${password}`);
+                console.error("Tenant creation failed:", result);
+                throw new Error(result.error || "Error desconocido al crear la empresa.");
             }
 
-        } catch (apiError) {
-            console.error("API Error:", apiError);
-            alert("Error de conexión al crear el usuario dueño.");
-        }
+            alert(`✅ Empresa "${name}" y usuario dueño creados exitosamente.\n\nEmail: ${email}\nPassword: ${password}`);
 
-        setShowNewCompanyModal(false);
-        fetchCompanies();
+            setShowNewCompanyModal(false);
+            fetchCompanies();
+
+        } catch (error) {
+            console.error("Creation Error:", error);
+            alert(`Error: ${error.message}`);
+        }
     };
 
     const handleDeleteCompany = async (id, name) => {
